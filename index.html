@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA | Bespoke Artisanal Fragrances</title>
+    <!-- Google Fonts for Hierarchical Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* DESIGN PRINCIPLES: COLOR SCHEME & CONTRAST */
+        :root {
+            --bg-obsidian: #0D0D0D;
+            --bg-card: #161616;
+            --accent-gold: #D4AF37;
+            --accent-gold-hover: #F3E5AB;
+            --text-cream: #F5F5F0;
+            --text-muted: #A0A0A0;
+            --border-color: #2A2A2A;
+            --font-heading: 'Cinzel', serif;
+            --font-body: 'Montserrat', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-obsidian);
+            color: var(--text-cream);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* HIERARCHICAL TYPOGRAPHY */
+        h1 { font-family: var(--font-heading); font-size: 3.5rem; font-weight: 700; letter-spacing: 2px; line-height: 1.1; }
+        h2 { font-family: var(--font-heading); font-size: 2.2rem; color: var(--accent-gold); margin-bottom: 1rem; }
+        h3 { font-family: var(--font-heading); font-size: 1.4rem; font-weight: 600; }
+        p { font-size: 0.95rem; color: var(--text-muted); }
+
+        /* HEADER & NAVIGATION */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(13, 13, 13, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.2rem 8%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.8rem;
+            color: var(--accent-gold);
+            text-decoration: none;
+            letter-spacing: 3px;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: var(--text-cream);
+            text-decoration: none;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: color 0.3s;
+        }
+
+        nav a:hover, nav a.active {
+            color: var(--accent-gold);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* BUTTONS & CALL TO ACTION */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-gold);
+            color: var(--bg-obsidian);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-gold-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent-gold);
+            color: var(--bg-obsidian);
+        }
+
+        /* RULE OF THIRDS HERO SECTION */
+        .hero {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* 2/3 and 1/3 grid alignment */
+            min-height: 85vh;
+            padding: 0 8%;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .hero-content {
+            padding-right: 4rem;
+        }
+
+        .hero-content p {
+            font-size: 1.1rem;
+            margin: 1.5rem 0 2.5rem 0;
+            max-width: 550px;
+        }
+
+        .hero-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        /* SECTIONS / LAYOUT */
+        section {
+            padding: 5rem 8%;
+        }
+
+        .view-panel {
+            display: none;
+        }
+
+        .view-panel.active {
+            display: block;
+        }
+
+        /* STORE GRID */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .product-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: border-color 0.3s;
+        }
+
+        .product-card:hover {
+            border-color: var(--accent-gold);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background-color: #222;
+            margin-bottom: 1rem;
+        }
+
+        .price-tag {
+            color: var(--accent-gold);
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin: 0.5rem 0;
+        }
+
+        /* FORMS & DASHBOARD */
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-cream);
+            font-family: var(--font-body);
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: 1px solid var(--accent-gold);
+        }
+
+        /* RATING STARS */
+        .star-rating {
+            display: flex;
+            gap: 0.3rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            margin: 0.5rem 0;
+        }
+
+        .star-rating .star.active {
+            color: var(--accent-gold);
+        }
+
+        /* FOOTER & SITE MAP */
+        footer {
+            background-color: #050505;
+            border-top: 1px solid var(--border-color);
+            padding: 4rem 8% 2rem 8%;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1.5fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .site-map ul {
+            list-style: none;
+        }
+
+        .site-map li {
+            margin-bottom: 0.5rem;
+        }
+
+        .site-map a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .site-map a:hover {
+            color: var(--accent-gold);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. HEADER & 2. NAVIGATIONAL LINKS -->
+    <header>
+        <a href="#" class="logo" onclick="switchView('home')">AURA</a>
+        <nav>
+            <ul>
+                <li><a href="#home" id="nav-home" class="active" onclick="switchView('home')">Home</a></li>
+                <li><a href="#store" id="nav-store" onclick="switchView('store')">Store Page</a></li>
+                <li><a href="#seller" id="nav-seller" onclick="switchView('seller')">Seller Dashboard</a></li>
+                <li><a href="#about" id="nav-about" onclick="switchView('about')">About Us</a></li>
+                <li><a href="#contacts" id="nav-contacts" onclick="switchView('contacts')">Contacts</a></li>
+            </ul>
+        </nav>
+        <div class="nav-actions">
+            <button class="btn btn-outline" id="auth-btn" onclick="openAuthModal()">Register / Login</button>
+        </div>
+    </header>
+
+    <main id="app-content">
+        <!-- HOME PAGE (RULE OF THIRDS & CTA) -->
+        <div id="view-home" class="view-panel active">
+            <section class="hero">
+                <div class="hero-content">
+                    <h1>SIGHT UNSEEN.<br>SCENT UNFORGOTTEN.</h1>
+                    <p>Discover hand-crafted olfactory masterpieces or open your own boutique marketplace directly on AURA.</p>
+                    <button class="btn btn-primary" onclick="switchView('store')">Explore Collection</button>
+                </div>
+                <div class="hero-card">
+                    <h3>Featured Extract</h3>
+                    <p style="margin: 0.5rem 0;">Midnight Amber Oud</p>
+                    <div class="price-tag">₱4,500.00</div>
+                    <button class="btn btn-outline" style="width: 100%; margin-top: 1rem;" onclick="triggerPaymongoCheckout('Midnight Amber Oud', 4500)">Acquire via GCash</button>
+                </div>
+            </section>
+
+            <!-- FEATURES / BODY -->
+            <section style="background: var(--bg-card);">
+                <h2>Designed for Connoisseurs & Creators</h2>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 2rem;">
+                    <div>
+                        <h3>Peer-to-Peer Artisanal Marketplace</h3>
+                        <p>Post and manage your bespoke fragrance inventory directly with real-time seller analytics.</p>
+                    </div>
+                    <div>
+                        <h3>Native GCash Checkout</h3>
+                        <p>Seamlessly transact using PayMongo payment rails optimized for digital Philippines currency systems.</p>
+                    </div>
+                    <div>
+                        <h3>Verified Reviews</h3>
+                        <p>Transparent star-rating frameworks to ensure community trust and scent authenticity.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- STORE PAGE -->
+        <div id="view-store" class="view-panel">
+            <section>
+                <h2>The Fragrance Gallery</h2>
+                <p>Curated offerings from independent perfumers nationwide.</p>
+                <div class="product-grid" id="product-list">
+                    <!-- Dynamic Loading via Supabase JS -->
+                    <p>Loading luxury items...</p>
+                </div>
+            </section>
+        </div>
+
+        <!-- SELLER DASHBOARD (ABILITY: POST PRODUCTS & GCASH INPUT) -->
+        <div id="view-seller" class="view-panel">
+            <section>
+                <h2>Seller Studio</h2>
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; margin-top: 2rem;">
+                    <div>
+                        <h3>Account & GCash Setup</h3>
+                        <form id="seller-profile-form" style="margin-top: 1rem;">
+                            <div class="form-group">
+                                <label>Registered Name</label>
+                                <input type="text" id="seller-name" required placeholder="Full Name">
+                            </div>
+                            <div class="form-group">
+                                <label>GCash Mobile Number</label>
+                                <input type="text" id="seller-gcash" required placeholder="09XXXXXXXXX">
+                            </div>
+                            <button type="button" class="btn btn-outline" onclick="saveGcashDetails()">Update Payout Details</button>
+                        </form>
+                    </div>
+                    <div>
+                        <h3>Post a New Product</h3>
+                        <form id="add-product-form" style="margin-top: 1rem;">
+                            <div class="form-group">
+                                <label>Perfume Title</label>
+                                <input type="text" id="prod-name" required placeholder="e.g., Royal Vanilla EDP">
+                            </div>
+                            <div class="form-group">
+                                <label>Brand / House</label>
+                                <input type="text" id="prod-brand" required placeholder="House of AURA">
+                            </div>
+                            <div class="form-group">
+                                <label>Price (PHP)</label>
+                                <input type="number" id="prod-price" required placeholder="2500">
+                            </div>
+                            <div class="form-group">
+                                <label>Image URL</label>
+                                <input type="url" id="prod-img" required placeholder="https://images.unsplash.com/photo-...">
+                            </div>
+                            <div class="form-group">
+                                <label>Description</label>
+                                <textarea id="prod-desc" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">List Product For Sale</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ABOUT US -->
+        <div id="view-about" class="view-panel">
+            <section>
+                <h2>Our Philosophy</h2>
+                <p style="max-width: 700px; margin-top: 1rem;">AURA bridges the gap between boutique perfumers and discerning olfactory collectors. Built on digital precision, we enable seamless trade with native local payout integrations, real-time consultation via AI, and transparent community ratings.</p>
+            </section>
+        </div>
+
+        <!-- CONTACTS -->
+        <div id="view-contacts" class="view-panel">
+            <section>
+                <h2>Contact the Concierge</h2>
+                <form style="max-width: 500px; margin-top: 1.5rem;">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea rows="4" required></textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary">Transmit Inquiry</button>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <!-- 4. SITE MAP & 5. FOOTER -->
+    <footer>
+        <div class="footer-grid">
+            <div>
+                <a href="#" class="logo">AURA</a>
+                <p style="margin-top: 1rem;">Architects of Fine Fragrance & Decentralized Commerce.</p>
+            </div>
+            <div class="site-map">
+                <h3>Site Map</h3>
+                <ul>
+                    <li><a href="#home" onclick="switchView('home')">Home</a></li>
+                    <li><a href="#store" onclick="switchView('store')">Store Page</a></li>
+                    <li><a href="#seller" onclick="switchView('seller')">Seller Dashboard</a></li>
+                    <li><a href="#about" onclick="switchView('about')">About Us</a></li>
+                    <li><a href="#contacts" onclick="switchView('contacts')">Contacts</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3>Platform</h3>
+                <p>Built with GitHub, Vercel Serverless Architecture, Supabase, PayMongo, Voiceflow.</p>
+            </div>
+            <div>
+                <h3>Legal</h3>
+                <p>&copy; 2026 AURA Inc. All Rights Reserved.</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Designed under strict adherence to rules of contrast, hierarchy, and digital luxury.</p>
+        </div>
+    </footer>
+
+    <!-- VOICEFLOW AI CHATBOT EMBED -->
+    <script type="text/javascript">
+      (function(d, t) {
+          var v = d.createElement(t), s = d.getElementsByTagName(t)[0];
+          v.onload = function() {
+            window.voiceflow.chat.load({
+              verify: { projectID: 'YOUR_VOICEFLOW_PROJECT_ID' },
+              url: 'https://general-runtime.voiceflow.com',
+              versionID: 'production'
+            });
+          }
+          v.src = "https://cdn.voiceflow.com/widget/bundle.mjs"; v.type = "text/javascript"; s.parentNode.insertBefore(v, s);
+      })(document, 'script');
+    </script>
+
+    <!-- SYSTEM LOGIC: SUPABASE, PAYMONGO, REVIEWS INTERACTION -->
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = "https://YOUR_SUPABASE_PROJECT_ID.supabase.co";
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // View Navigation Engine
+        function switchView(viewName) {
+            document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav a').forEach(el => el.classList.remove('active'));
+            
+            const selectedView = document.getElementById(`view-${viewName}`);
+            const selectedNav = document.getElementById(`nav-${viewName}`);
+            
+            if (selectedView) selectedView.classList.add('active');
+            if (selectedNav) selectedNav.classList.add('active');
+
+            if(viewName === 'store') fetchProducts();
+        }
+
+        // Fetch Products & Display Reviews (Star Rating Ability)
+        async function fetchProducts() {
+            const listContainer = document.getElementById('product-list');
+            listContainer.innerHTML = "<p>Loading gallery items...</p>";
+
+            const { data: products, error } = await db.from('products').select('*');
+
+            if(error || !products) {
+                listContainer.innerHTML = "<p>Failed to load products. Check database connectivity.</p>";
+                return;
+            }
+
+            listContainer.innerHTML = products.map(prod => `
+                <div class="product-card">
+                    <div>
+                        <img src="${prod.image_url}" class="product-image" alt="${prod.name}">
+                        <h3>${prod.name}</h3>
+                        <p>By ${prod.brand}</p>
+                        <p style="font-size:0.8rem; margin-top:0.5rem;">${prod.description}</p>
+                        <div class="price-tag">₱${parseFloat(prod.price).toLocaleString()}</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" style="width:100%;" onclick="triggerPaymongoCheckout('${prod.name}', ${prod.price})">Buy Now via GCash</button>
+                        <div style="margin-top:1rem; border-top: 1px solid var(--border-color); padding-top:0.5rem;">
+                            <label style="font-size:0.75rem;">Leave Rating:</label>
+                            <div class="star-rating" data-id="${prod.id}">
+                                <span onclick="submitRating('${prod.id}', 1)">★</span>
+                                <span onclick="submitRating('${prod.id}', 2)">★</span>
+                                <span onclick="submitRating('${prod.id}', 3)">★</span>
+                                <span onclick="submitRating('${prod.id}', 4)">★</span>
+                                <span onclick="submitRating('${prod.id}', 5)">★</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Post Product Functionality
+        document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const { data: { user } } = await db.auth.getUser();
+
+            if(!user) {
+                alert("Please log in/register to list your items.");
+                return;
+            }
+
+            const newProduct = {
+                seller_id: user.id,
+                name: document.getElementById('prod-name').value,
+                brand: document.getElementById('prod-brand').value,
+                price: parseFloat(document.getElementById('prod-price').value),
+                image_url: document.getElementById('prod-img').value,
+                description: document.getElementById('prod-desc').value
+            };
+
+            const { error } = await db.from('products').insert([newProduct]);
+            if(!error) {
+                alert("Fragrance Listed Successfully!");
+                switchView('store');
+            } else {
+                alert("Error: " + error.message);
+            }
+        });
+
+        // Submit Star Rating Functionality
+        async function submitRating(productId, ratingValue) {
+            const { data: { user } } = await db.auth.getUser();
+            if(!user) {
+                alert("Authentic reviews require registration.");
+                return;
+            }
+
+            const { error } = await db.from('reviews').insert([{
+                product_id: productId,
+                user_id: user.id,
+                rating: ratingValue,
+                comment: "Rated via Web Gallery"
+            }]);
+
+            if(!error) alert(`Thank you! Submitted a ${ratingValue}-star rating.`);
+            else alert("Error leaving review: " + error.message);
+        }
+
+        // Save GCash Payout Details
+        async function saveGcashDetails() {
+            const { data: { user } } = await db.auth.getUser();
+            if(!user) return alert("Must be logged in.");
+
+            const gcash = document.getElementById('seller-gcash').value;
+            const name = document.getElementById('seller-name').value;
+
+            const { error } = await db.from('profiles').upsert({
+                id: user.id,
+                full_name: name,
+                gcash_number: gcash,
+                email: user.email
+            });
+
+            if(!error) alert("GCash billing metadata successfully tied to seller account.");
+        }
+
+        // Payment Processing API Trigger (PayMongo Integration)
+        async function triggerPaymongoCheckout(itemName, amount) {
+            alert(`Initializing secure PayMongo GCash link for ${itemName} (₱${amount})...`);
+            
+            try {
+                const response = await fetch('/api/paymongo-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: itemName, amount: amount * 100 }) // In cents
+                });
+                const data = await response.json();
+                if(data.checkoutUrl) window.location.href = data.checkoutUrl;
+            } catch (err) {
+                console.log("Serverless PayMongo Hook offline - direct endpoint required.");
+            }
+        }
+
+        // User Auth Registration Modal Placeholder
+        async function openAuthModal() {
+            const email = prompt("Enter your Registration Email:");
+            if (!email) return;
+            const { user, error } = await db.auth.signInWithOtp({ email });
+            if(!error) alert("Magic Authentication Link sent to your email address!");
+        }
+    </script>
+</body>
+</html>
