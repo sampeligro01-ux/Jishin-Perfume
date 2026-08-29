@@ -1,830 +1,996 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Scentora — a modern marketplace for discovering, reviewing, and selling perfumes.">
-  <title>Scentora | Perfume Marketplace</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <title>Jishin Scents | Discover Your Signature Scent</title>
 
-  <link rel="stylesheet" href="styles.css">
+    <meta
+        name="description"
+        content="Jishin Scents - Discover perfumes, explore fragrances, and find your signature scent."
+    >
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #fff;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* =========================
+           HEADER
+        ========================== */
+
+        header {
+            background: #ffffff;
+            padding: 28px 7%;
+            border-bottom: 1px solid #eee;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: auto;
+        }
+
+        .logo {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 38px;
+            letter-spacing: 7px;
+            color: #760027;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        /* =========================
+           SEARCH
+        ========================== */
+
+        .search-container {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 20px 25px;
+            border: 2px solid #ead8df;
+            border-radius: 50px;
+            font-size: 20px;
+            outline: none;
+            color: #555;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-container input:focus {
+            border-color: #b0004b;
+        }
+
+        .search-container input::placeholder {
+            color: #777;
+            font-weight: 600;
+        }
+
+        /* =========================
+           NAVIGATION
+        ========================== */
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 25px;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #c0004f;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .cart-button {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            border: none;
+            border-radius: 15px;
+            background: #d40055;
+            color: white;
+            font-size: 27px;
+            cursor: pointer;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -10px;
+            right: -7px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #f33a55;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .signin-button {
+            border: none;
+            background: #d40055;
+            color: white;
+            border-radius: 30px;
+            padding: 16px 25px;
+            font-size: 17px;
+            cursor: pointer;
+        }
+
+        .signin-button:hover,
+        .cart-button:hover {
+            background: #a90043;
+        }
+
+        /* =========================
+           HERO
+        ========================== */
+
+        .hero {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 70px 7%;
+            min-height: 600px;
+            border-radius: 45px;
+            background:
+                radial-gradient(
+                    circle at 75% 30%,
+                    rgba(255, 255, 255, 0.12),
+                    transparent 30%
+                ),
+                linear-gradient(
+                    135deg,
+                    #a80042,
+                    #700026,
+                    #4e001d
+                );
+            color: white;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            align-items: center;
+            gap: 40px;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(55px, 7vw, 95px);
+            line-height: 1.05;
+            letter-spacing: 2px;
+            margin-bottom: 35px;
+        }
+
+        .hero-subtitle {
+            font-size: 25px;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .cta-button {
+            display: inline-block;
+            text-decoration: none;
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 18px 45px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.35);
+            background: rgba(255,255,255,0.12);
+            transition: 0.3s;
+        }
+
+        .cta-button:hover {
+            background: white;
+            color: #79002b;
+        }
+
+        .hero-card {
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 35px;
+            padding: 50px 30px;
+            text-align: center;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
+        }
+
+        .hero-card h2 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 40px;
+            margin-bottom: 25px;
+        }
+
+        .hero-card p {
+            font-size: 18px;
+            line-height: 1.7;
+        }
+
+        /* =========================
+           FEATURES
+        ========================== */
+
+        .features {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 7%;
+        }
+
+        .section-title {
+            text-align: center;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 45px;
+            color: #700026;
+            margin-bottom: 45px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 40px 25px;
+            border-radius: 25px;
+            border: 1px solid #ead8df;
+            background: white;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+        }
+
+        .feature-icon {
+            font-size: 45px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            color: #760027;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .feature-card p {
+            line-height: 1.6;
+            color: #666;
+        }
+
+        /* =========================
+           SHOP
+        ========================== */
+
+        .shop {
+            background: #faf5f7;
+            padding: 80px 7%;
+        }
+
+        .products {
+            max-width: 1200px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 25px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.07);
+        }
+
+        .product-image {
+            height: 230px;
+            border-radius: 20px;
+            background: linear-gradient(
+                135deg,
+                #f5e7ed,
+                #ead0da
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 70px;
+            margin-bottom: 20px;
+        }
+
+        .product-card h3 {
+            color: #700026;
+            margin-bottom: 10px;
+        }
+
+        .product-card p {
+            color: #777;
+            margin-bottom: 15px;
+        }
+
+        .price {
+            font-size: 22px;
+            font-weight: bold;
+            color: #b0004b;
+        }
+
+        /* =========================
+           SITE MAP
+        ========================== */
+
+        .sitemap {
+            max-width: 1000px;
+            margin: 80px auto;
+            padding: 0 7%;
+            text-align: center;
+        }
+
+        .sitemap-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .sitemap-links a {
+            color: #760027;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        /* =========================
+           FOOTER
+        ========================== */
+
+        footer {
+            background: #4d001d;
+            color: white;
+            text-align: center;
+            padding: 45px 20px;
+        }
+
+        footer .footer-logo {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 32px;
+            letter-spacing: 5px;
+            margin-bottom: 15px;
+        }
+
+        footer p {
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+
+        /* =========================
+           MOBILE
+        ========================== */
+
+        @media (max-width: 900px) {
+
+            header {
+                padding: 25px 7%;
+            }
+
+            .logo {
+                font-size: 30px;
+                letter-spacing: 5px;
+            }
+
+            nav {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .nav-links {
+                justify-content: center;
+            }
+
+            .header-actions {
+                justify-content: center;
+            }
+
+            .hero {
+                grid-template-columns: 1fr;
+                margin: 15px;
+                padding: 60px 25px;
+            }
+
+            .feature-grid,
+            .products {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 35px;
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            .nav-links {
+                gap: 12px;
+                font-size: 14px;
+            }
+
+            .hero h1 {
+                font-size: 48px;
+            }
+
+            .hero-subtitle {
+                font-size: 19px;
+            }
+
+            .hero-card {
+                padding: 35px 20px;
+            }
+
+            .hero-card h2 {
+                font-size: 30px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<a class="skip-link" href="#main">Skip to content</a>
+    <!-- =========================
+         HEADER
+    ========================== -->
 
-<header class="site-header">
-  <div class="container nav-wrap">
+    <header>
 
-    <a class="brand" href="#home" aria-label="Scentora home">
-      <span class="brand-mark">S</span>
-      <span>Scentora</span>
-    </a>
+        <div class="header-container">
 
-    <button
-      class="nav-toggle"
-      id="navToggle"
-      aria-expanded="false"
-      aria-controls="mainNav"
-      aria-label="Open menu">
-      ☰
-    </button>
+            <div class="logo">
+                JISHIN SCENTS
+            </div>
 
-    <nav id="mainNav" class="main-nav" aria-label="Primary navigation">
-      <a href="#home">Home</a>
-      <a href="#about">About Us</a>
-      <a href="#contact">Contacts</a>
-      <a href="#dashboard">Seller Dashboard</a>
-      <a href="#store">Store Page</a>
-    </nav>
+            <div class="search-container">
+                <input
+                    type="search"
+                    id="searchInput"
+                    placeholder="Search Perfume Brands..."
+                    aria-label="Search perfume brands"
+                >
+            </div>
 
-    <div class="nav-actions">
-      <button class="text-btn" id="authBtn">Sign in</button>
+            <nav>
 
-      <button class="cart-btn" id="cartBtn" aria-label="Open cart">
-        Cart <span id="cartCount">0</span>
-      </button>
-    </div>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#about">About Us</a></li>
+                    <li><a href="#store">Store</a></li>
+                    <li><a href="#dashboard">Seller Dashboard</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
 
-  </div>
-</header>
+                <div class="header-actions">
 
+                    <button
+                        class="cart-button"
+                        type="button"
+                        aria-label="Shopping cart"
+                        onclick="openCart()"
+                    >
+                        🛒
+                        <span class="cart-count" id="cartCount">0</span>
+                    </button>
 
-<main id="main">
+                    <button
+                        class="signin-button"
+                        type="button"
+                        onclick="signIn()"
+                    >
+                        Sign in
+                    </button>
 
-<!-- HERO -->
+                </div>
 
-<section id="home" class="hero">
+            </nav>
 
-  <div class="container hero-grid">
-
-    <div class="hero-copy">
-
-      <p class="eyebrow">
-        Curated scents • Independent sellers • Secure checkout
-      </p>
-
-      <h1>
-        Find a fragrance that <em>feels like you.</em>
-      </h1>
-
-      <p class="hero-text">
-        Discover perfumes from emerging sellers and established collections,
-        compare community ratings, and check out securely with PayMongo.
-      </p>
-
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="#store">
-          Shop perfumes
-        </a>
-
-        <a class="btn btn-secondary" href="#dashboard">
-          Sell your scent
-        </a>
-      </div>
-
-      <div class="hero-proof">
-        <span>★★★★★</span>
-        <strong> Community-rated scents</strong>
-      </div>
-
-    </div>
-
-
-    <div class="hero-art" aria-label="Featured perfume visual">
-
-      <div class="rule-third-line"></div>
-
-      <div class="perfume-bottle">
-
-        <div class="bottle-cap"></div>
-
-        <div class="bottle-neck"></div>
-
-        <div class="bottle-body">
-          <span>SCENTORA</span>
-          <small>EAU DE PARFUM</small>
         </div>
 
-      </div>
-
-      <div class="art-card art-card-top">
-        <b>01</b>
-        <span>
-          Signature<br>
-          collection
-        </span>
-      </div>
-
-      <div class="art-card art-card-bottom">
-        <span>Long-lasting</span>
-        <b>Notes that stay.</b>
-      </div>
-
-    </div>
-
-  </div>
-
-</section>
+    </header>
 
 
-<!-- FEATURES -->
+    <!-- =========================
+         HERO
+    ========================== -->
 
-<section class="feature-strip">
+    <main id="home">
 
-  <div class="container feature-grid">
+        <section class="hero">
 
-    <article>
-      <span class="feature-icon">✦</span>
+            <div class="hero-content">
 
-      <div>
-        <h3>Curated discovery</h3>
+                <h1>
+                    DISCOVER<br>
+                    YOUR SIGNATURE<br>
+                    SCENT
+                </h1>
+
+                <p class="hero-subtitle">
+                    Find fragrances that express your personality,
+                    style, and individuality.
+                </p>
+
+                <a
+                    href="#store"
+                    class="cta-button"
+                >
+                    SHOP NOW
+                </a>
+
+            </div>
+
+            <div class="hero-card">
+
+                <h2>
+                    JISHIN SCENTS
+                </h2>
+
+                <p>
+                    Explore carefully selected fragrances
+                    designed to make every moment memorable.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             FEATURES
+        ========================== -->
+
+        <section class="features" id="about">
+
+            <h2 class="section-title">
+                Why Choose Jishin Scents?
+            </h2>
+
+            <div class="feature-grid">
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">
+                        🌸
+                    </div>
+
+                    <h3>
+                        Premium Fragrances
+                    </h3>
+
+                    <p>
+                        Explore a collection of fragrances
+                        selected for different personalities
+                        and occasions.
+                    </p>
+
+                </article>
+
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">
+                        🔒
+                    </div>
+
+                    <h3>
+                        Secure Shopping
+                    </h3>
+
+                    <p>
+                        Enjoy a convenient shopping experience
+                        with secure payment processing.
+                    </p>
+
+                </article>
+
+
+                <article class="feature-card">
+
+                    <div class="feature-icon">
+                        🤖
+                    </div>
+
+                    <h3>
+                        AI Assistance
+                    </h3>
+
+                    <p>
+                        Get assistance while exploring products
+                        using our Jishin Scents AI chatbot.
+                    </p>
+
+                </article>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             STORE
+        ========================== -->
+
+        <section class="shop" id="store">
+
+            <h2 class="section-title">
+                Featured Perfumes
+            </h2>
+
+            <div class="products" id="products">
+
+                <article class="product-card">
+
+                    <div class="product-image">
+                        🌹
+                    </div>
+
+                    <h3>
+                        Rose Essence
+                    </h3>
+
+                    <p>
+                        A soft and elegant floral fragrance.
+                    </p>
+
+                    <div class="price">
+                        ₱899
+                    </div>
+
+                </article>
+
+
+                <article class="product-card">
+
+                    <div class="product-image">
+                        🌿
+                    </div>
+
+                    <h3>
+                        Fresh Aura
+                    </h3>
+
+                    <p>
+                        A clean and refreshing everyday scent.
+                    </p>
+
+                    <div class="price">
+                        ₱999
+                    </div>
+
+                </article>
+
+
+                <article class="product-card">
+
+                    <div class="product-image">
+                        🖤
+                    </div>
+
+                    <h3>
+                        Midnight
+                    </h3>
+
+                    <p>
+                        A deep and sophisticated fragrance.
+                    </p>
+
+                    <div class="price">
+                        ₱1,199
+                    </div>
+
+                </article>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             SELLER DASHBOARD
+        ========================== -->
+
+        <section
+            id="dashboard"
+            class="features"
+        >
+
+            <h2 class="section-title">
+                Become a Seller
+            </h2>
+
+            <div class="feature-card">
+
+                <div class="feature-icon">
+                    🛍️
+                </div>
+
+                <h3>
+                    Sell Your Own Products
+                </h3>
+
+                <p>
+                    Register an account and manage your own
+                    perfume products through the seller dashboard.
+                </p>
+
+                <br>
+
+                <button
+                    class="signin-button"
+                    type="button"
+                    onclick="signIn()"
+                >
+                    Seller Dashboard
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             CONTACT
+        ========================== -->
+
+        <section
+            id="contact"
+            class="features"
+        >
+
+            <h2 class="section-title">
+                Contact Jishin Scents
+            </h2>
+
+            <div class="feature-card">
+
+                <h3>
+                    Need Assistance?
+                </h3>
+
+                <p>
+                    Our AI assistant can help you explore
+                    fragrances and answer questions about
+                    Jishin Scents.
+                </p>
+
+                <br>
+
+                <p>
+                    Email:
+                    support@jishinscents.com
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             SITE MAP
+        ========================== -->
+
+        <section class="sitemap">
+
+            <h2 class="section-title">
+                Site Map
+            </h2>
+
+            <div class="sitemap-links">
+
+                <a href="#home">Home</a>
+
+                <a href="#about">About Us</a>
+
+                <a href="#store">Store</a>
+
+                <a href="#dashboard">
+                    Seller Dashboard
+                </a>
+
+                <a href="#contact">Contact</a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- =========================
+         FOOTER
+    ========================== -->
+
+    <footer>
+
+        <div class="footer-logo">
+            JISHIN SCENTS
+        </div>
+
         <p>
-          Browse scent profiles and community ratings.
+            Discover your signature scent.
         </p>
-      </div>
-    </article>
 
+        <br>
 
-    <article>
-      <span class="feature-icon">◎</span>
-
-      <div>
-        <h3>Seller-friendly</h3>
         <p>
-          Registered users can list their own perfumes.
+            © 2026 Jishin Scents. All rights reserved.
         </p>
-      </div>
-    </article>
 
+    </footer>
 
-    <article>
-      <span class="feature-icon">✓</span>
 
-      <div>
-        <h3>Secure payments</h3>
-        <p>
-          PayMongo-hosted checkout keeps card data off-site.
-        </p>
-      </div>
-    </article>
+    <!-- =========================
+         BASIC JAVASCRIPT
+    ========================== -->
 
-  </div>
+    <script>
 
-</section>
+        let cartItems = 0;
 
 
-<!-- STORE -->
+        function openCart() {
 
-<section id="store" class="section">
+            alert(
+                "Your shopping cart is currently empty."
+            );
 
-  <div class="container">
-
-    <div class="section-heading">
-
-      <div>
-        <p class="eyebrow">The store</p>
-        <h2>Explore the collection</h2>
-      </div>
-
-      <div class="filters">
-
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Search perfume..."
-          aria-label="Search perfumes">
-
-        <select id="categoryFilter" aria-label="Filter by category">
-          <option value="all">All categories</option>
-          <option value="floral">Floral</option>
-          <option value="woody">Woody</option>
-          <option value="fresh">Fresh</option>
-          <option value="oriental">Oriental</option>
-          <option value="unisex">Unisex</option>
-        </select>
-
-      </div>
-
-    </div>
-
-
-    <div id="storeStatus" class="notice" hidden></div>
-
-    <div
-      id="productGrid"
-      class="product-grid"
-      aria-live="polite">
-    </div>
-
-  </div>
-
-</section>
-
-
-<!-- ABOUT -->
-
-<section id="about" class="section section-alt">
-
-  <div class="container about-grid">
-
-    <div>
-
-      <p class="eyebrow">About us</p>
-
-      <h2>
-        A marketplace built around the art of fragrance.
-      </h2>
-
-    </div>
-
-
-    <div>
-
-      <p>
-        Scentora connects buyers with perfume sellers in one simple
-        marketplace. Every listing can carry reviews and star ratings,
-        helping shoppers make informed choices.
-      </p>
-
-      <p>
-        Our interface follows the rule of thirds, clear contrast,
-        a restrained warm-neutral color scheme, and a deliberate
-        typographic hierarchy so the shopping path remains easy to understand.
-      </p>
-
-    </div>
-
-  </div>
-
-</section>
-
-
-<!-- SELLER DASHBOARD -->
-
-<section id="dashboard" class="section">
-
-  <div class="container">
-
-    <div class="section-heading">
-
-      <div>
-        <p class="eyebrow">Seller dashboard</p>
-        <h2>List your own perfume</h2>
-      </div>
-
-    </div>
-
-
-    <div id="dashboardGate" class="dashboard-card">
-
-      <h3>Sign in to sell</h3>
-
-      <p>
-        Create an account, add your GCash number,
-        and you can publish perfume listings.
-      </p>
-
-      <button class="btn btn-primary" id="dashboardSignIn">
-        Sign in / Register
-      </button>
-
-    </div>
-
-
-    <form id="productForm" class="form-card" hidden>
-
-      <div class="form-row">
-
-        <label>
-          Product name
-          <input
-            id="productName"
-            required
-            maxlength="120">
-        </label>
-
-        <label>
-          Price (PHP)
-          <input
-            id="productPrice"
-            required
-            type="number"
-            min="1"
-            step="0.01">
-        </label>
-
-      </div>
-
-
-      <div class="form-row">
-
-        <label>
-          Category
-
-          <select id="productCategory" required>
-            <option value="floral">Floral</option>
-            <option value="woody">Woody</option>
-            <option value="fresh">Fresh</option>
-            <option value="oriental">Oriental</option>
-            <option value="unisex">Unisex</option>
-          </select>
-
-        </label>
-
-
-        <label>
-          Image URL
-
-          <input
-            id="productImage"
-            type="url"
-            placeholder="https://...">
-        </label>
-
-      </div>
-
-
-      <label>
-        Description
-
-        <textarea
-          id="productDescription"
-          required
-          maxlength="1000"
-          rows="4">
-        </textarea>
-      </label>
-
-
-      <div class="form-row">
-
-        <label>
-          Your GCash number
-
-          <input
-            id="gcashNumber"
-            inputmode="numeric"
-            placeholder="09XXXXXXXXX"
-            maxlength="13">
-        </label>
-
-        <span class="field-help">
-          Your GCash number is stored with your account for seller records.
-          It is not used as a payment credential.
-        </span>
-
-      </div>
-
-
-      <button class="btn btn-primary" type="submit">
-        Publish product
-      </button>
-
-      <p
-        id="productFormMessage"
-        class="form-message"
-        role="status">
-      </p>
-
-    </form>
-
-
-    <div id="myProducts" class="my-products"></div>
-
-  </div>
-
-</section>
-
-
-<!-- CONTACT -->
-
-<section id="contact" class="section section-alt">
-
-  <div class="container contact-grid">
-
-    <div>
-
-      <p class="eyebrow">Contacts</p>
-
-      <h2>
-        Need help with an order or listing?
-      </h2>
-
-      <p>
-        Send us your question and our team will respond
-        through your registered contact email.
-      </p>
-
-    </div>
-
-
-    <form id="contactForm" class="form-card">
-
-      <label>
-        Name
-
-        <input
-          id="contactName"
-          required
-          maxlength="100">
-      </label>
-
-
-      <label>
-        Email
-
-        <input
-          id="contactEmail"
-          required
-          type="email"
-          maxlength="200">
-      </label>
-
-
-      <label>
-        Message
-
-        <textarea
-          id="contactMessage"
-          required
-          maxlength="2000"
-          rows="5">
-        </textarea>
-      </label>
-
-
-      <button class="btn btn-primary" type="submit">
-        Send message
-      </button>
-
-
-      <p
-        id="contactMessageStatus"
-        class="form-message"
-        role="status">
-      </p>
-
-    </form>
-
-  </div>
-
-</section>
-
-</main>
-
-
-<!-- FOOTER -->
-
-<footer class="site-footer">
-
-  <div class="container footer-grid">
-
-    <div>
-
-      <a class="brand footer-brand" href="#home">
-        <span class="brand-mark">S</span>
-        <span>Scentora</span>
-      </a>
-
-      <p>
-        Fragrance discovery with a marketplace
-        made for buyers and sellers.
-      </p>
-
-    </div>
-
-
-    <div>
-
-      <h3>Site map</h3>
-
-      <a href="#home">Home</a>
-      <a href="#store">Store Page</a>
-      <a href="#about">About Us</a>
-      <a href="#dashboard">Seller Dashboard</a>
-      <a href="#contact">Contacts</a>
-
-    </div>
-
-
-    <div>
-
-      <h3>Account</h3>
-
-      <button
-        class="footer-link"
-        id="footerAuthBtn">
-        Sign in / Register
-      </button>
-
-      <button
-        class="footer-link"
-        id="footerCartBtn">
-        View cart
-      </button>
-
-    </div>
-
-  </div>
-
-
-  <div class="container footer-bottom">
-
-    <span>
-      © <span id="year"></span> Scentora
-    </span>
-
-    <span>
-      Payments powered by PayMongo
-    </span>
-
-  </div>
-
-</footer>
-
-
-<!-- AUTH MODAL -->
-
-<div id="authModal" class="modal" hidden>
-
-  <div class="modal-backdrop" data-close-modal></div>
-
-  <section
-    class="modal-card"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="authTitle">
-
-    <button
-      class="modal-close"
-      data-close-modal
-      aria-label="Close">
-      ×
-    </button>
-
-
-    <p class="eyebrow">Account</p>
-
-    <h2 id="authTitle">
-      Welcome to Scentora
-    </h2>
-
-
-    <div class="auth-tabs">
-
-      <button
-        class="active"
-        data-auth-mode="signin">
-        Sign in
-      </button>
-
-      <button data-auth-mode="signup">
-        Register
-      </button>
-
-    </div>
-
-
-    <form id="authForm">
-
-      <label>
-        Email
-
-        <input
-          id="authEmail"
-          required
-          type="email">
-      </label>
-
-
-      <label>
-        Password
-
-        <input
-          id="authPassword"
-          required
-          type="password"
-          minlength="8">
-      </label>
-
-
-      <label id="authGcashWrap" hidden>
-
-        GCash number
-
-        <input
-          id="authGcash"
-          inputmode="numeric"
-          maxlength="13"
-          placeholder="09XXXXXXXXX">
-
-      </label>
-
-
-      <button
-        class="btn btn-primary"
-        id="authSubmit"
-        type="submit">
-        Sign in
-      </button>
-
-
-      <p
-        id="authMessage"
-        class="form-message"
-        role="status">
-      </p>
-
-    </form>
-
-
-    <button
-      class="text-btn signout-btn"
-      id="signOutBtn"
-      hidden>
-      Sign out
-    </button>
-
-  </section>
-
-</div>
-
-
-<!-- CART -->
-
-<aside
-  id="cartDrawer"
-  class="cart-drawer"
-  aria-label="Shopping cart"
-  aria-hidden="true">
-
-  <div class="cart-header">
-
-    <h2>Your cart</h2>
-
-    <button
-      id="cartClose"
-      class="modal-close"
-      aria-label="Close cart">
-      ×
-    </button>
-
-  </div>
-
-
-  <div id="cartItems"></div>
-
-
-  <div class="cart-summary">
-
-    <div>
-      <span>Total</span>
-      <strong id="cartTotal">₱0.00</strong>
-    </div>
-
-    <button
-      id="checkoutBtn"
-      class="btn btn-primary">
-      Proceed to payment
-    </button>
-
-    <p
-      id="checkoutMessage"
-      class="form-message">
-    </p>
-
-  </div>
-
-</aside>
-
-
-<!-- PRODUCT MODAL -->
-
-<div id="productModal" class="modal" hidden>
-
-  <div class="modal-backdrop" data-close-modal></div>
-
-  <section
-    class="modal-card product-modal-card"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="productModalTitle">
-
-    <button
-      class="modal-close"
-      data-close-modal
-      aria-label="Close">
-      ×
-    </button>
-
-    <div id="productModalContent"></div>
-
-  </section>
-
-</div>
-
-
-<!-- PUBLIC CONFIGURATION -->
-
-<script>
-
-window.SCENTORA_CONFIG = {
-
-  SUPABASE_URL:
-    "https://qujmqckqgmidtrwjzhfw.supabase.co",
-
-  SUPABASE_ANON_KEY:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1am1xY2txZ21pZHRyd2p6aGZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NjgwNDUsImV4cCI6MjEwMzM0NDA0NX0.3ZaIi3H2xbyuy42cZWFzzm-wmzcQUlcWbH8G4RX__j4",
-
-  VOICEFLOW_PROJECT_ID:
-    "YOUR_VOICEFLOW_PROJECT_ID"
-
-};
-
-</script>
-
-
-<script src="app.js"></script>
-
-
-<!-- VOICEFLOW -->
-
-<script>
-
-(function(d,t){
-
-  if (
-    !window.SCENTORA_CONFIG ||
-    window.SCENTORA_CONFIG.VOICEFLOW_PROJECT_ID ===
-    "6a904bddf83c770cbc4e63c2"
-  ) return;
-
-  var v=d.createElement(t);
-  var s=d.getElementsByTagName(t)[0];
-
-  v.onload=function(){
-
-    window.voiceflow.chat.load({
-
-      verify:{
-        projectID:
-          window.SCENTORA_CONFIG.VOICEFLOW_PROJECT_ID
-      },
-
-      url:
-        "https://general-runtime.voiceflow.com",
-
-      versionID:
-        "production",
-
-      voice:{
-        url:
-          "https://runtime-api.voiceflow.com"
-      }
-
-    });
-
-  };
-
-  v.src =
-    "https://cdn.voiceflow.com/widget-next/bundle.mjs";
-
-  v.type =
-    "text/javascript";
-
-  s.parentNode.insertBefore(v,s);
-
-})(document,"script");
-
-</script>
-<script type="text/javascript">
-  (function(d, t) {
-    var v = d.createElement(t),
-        s = d.getElementsByTagName(t)[0];
-
-    v.onload = function() {
-      window.voiceflow.chat.load({
-        verify: {
-          projectID: '6a904bddf83c770cbc4e63c2'
-        },
-        url: 'https://general-runtime.voiceflow.com',
-        voice: {
-          url: 'https://runtime-api.voiceflow.com'
         }
-      });
-    };
 
-    v.src = 'https://cdn.voiceflow.com/widget-next/bundle.mjs';
-    v.type = 'text/javascript';
-    s.parentNode.insertBefore(v, s);
-  })(document, 'script');
-</script>
+
+        function signIn() {
+
+            alert(
+                "Sign-in functionality will be connected to Supabase."
+            );
+
+        }
+
+
+        function addToCart() {
+
+            cartItems++;
+
+            document.getElementById(
+                "cartCount"
+            ).textContent = cartItems;
+
+        }
+
+
+        /* Search */
+
+        const searchInput =
+            document.getElementById("searchInput");
+
+        searchInput.addEventListener(
+            "input",
+            function () {
+
+                const searchTerm =
+                    this.value.toLowerCase().trim();
+
+                const products =
+                    document.querySelectorAll(
+                        ".product-card"
+                    );
+
+                products.forEach(function (product) {
+
+                    const productText =
+                        product.textContent.toLowerCase();
+
+                    if (
+                        productText.includes(searchTerm)
+                        ||
+                        searchTerm === ""
+                    ) {
+
+                        product.style.display =
+                            "";
+
+                    } else {
+
+                        product.style.display =
+                            "none";
+
+                    }
+
+                });
+
+            }
+        );
+
+    </script>
+
+
+    <!-- =================================================
+         VOICEFLOW AI CHATBOT
+         JISHIN SCENTS
+    ================================================== -->
+
+    <script type="text/javascript">
+
+        (function (d, t) {
+
+            var v = d.createElement(t);
+            var s = d.getElementsByTagName(t)[0];
+
+            v.onload = function () {
+
+                window.voiceflow.chat.load({
+
+                    verify: {
+                        projectID:
+                            '6a904bddf83c770cbc4e63c2'
+                    },
+
+                    url:
+                        'https://general-runtime.voiceflow.com',
+
+                    voice: {
+                        url:
+                            'https://runtime-api.voiceflow.com'
+                    }
+
+                });
+
+            };
+
+            v.src =
+                'https://cdn.voiceflow.com/widget-next/bundle.mjs';
+
+            v.type =
+                'text/javascript';
+
+            s.parentNode.insertBefore(v, s);
+
+        })(document, 'script');
+
+    </script>
+
 </body>
 </html>
