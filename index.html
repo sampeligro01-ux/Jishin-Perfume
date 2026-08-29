@@ -1,1 +1,811 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <meta name="description" content="Jishin — a modern marketplace for discovering, reviewing, and selling perfumes."> <title>Jishin | Perfume Marketplace</title> <link rel="preconnect" href="https://fonts.googleapis.com"> <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"> <link rel="stylesheet" href="styles.css"> <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> </head> <body> <a class="skip-link" href="#main">Skip to content</a> <header class="site-header"> <div class="container nav-wrap"> <a class="brand" href="#home" aria-label="Jishin home"> <span class="brand-mark">J</span> <span>Jishin</span> </a> <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mainNav" aria-label="Open menu"> ☰ </button> <nav id="mainNav" class="main-nav" aria-label="Primary navigation"> <a href="#home">Home</a> <a href="#about">About Us</a> <a href="#contact">Contacts</a> <a href="#dashboard">Seller Dashboard</a> <a href="#store">Store Page</a> </nav> <div class="nav-actions"> <button class="text-btn" id="authBtn">Sign in</button> <button class="cart-btn" id="cartBtn" aria-label="Open cart"> Cart <span id="cartCount">0</span> </button> </div> </div> </header> <main id="main"> <!-- HERO --> <section id="home" class="hero"> <div class="container hero-grid"> <div class="hero-copy"> <p class="eyebrow"> Curated scents • Independent sellers • Secure checkout </p> <h1> Find a fragrance that <em>feels like you.</em> </h1> <p class="hero-text"> Discover perfumes from emerging sellers and established collections, compare community ratings, and check out securely with PayMongo. </p> <div class="hero-actions"> <a class="btn btn-primary" href="#store"> Shop perfumes </a> <a class="btn btn-secondary" href="#dashboard"> Sell your scent </a> </div> <div class="hero-proof"> <span>★★★★★</span> <strong> Community-rated scents</strong> </div> </div> <div class="hero-art" aria-label="Featured perfume visual"> <div class="rule-third-line"></div> <div class="perfume-bottle"> <div class="bottle-cap"></div> <div class="bottle-neck"></div> <div class="bottle-body"> <span>JISHIN</span> <small>EAU DE PARFUM</small> </div> </div> <div class="art-card art-card-top"> <b>01</b> <span> Signature<br> collection </span> </div> <div class="art-card art-card-bottom"> <span>Long-lasting</span> <b>Notes that stay.</b> </div> </div> </div> </section> <!-- FEATURES --> <section class="feature-strip"> <div class="container feature-grid"> <article> <span class="feature-icon">✦</span> <div> <h3>Curated discovery</h3> <p> Browse scent profiles and community ratings. </p> </div> </article> <article> <span class="feature-icon">◎</span> <div> <h3>Seller-friendly</h3> <p> Registered users can list their own perfumes. </p> </div> </article> <article> <span class="feature-icon">✓</span> <div> <h3>Secure payments</h3> <p> PayMongo-hosted checkout keeps card data off-site. </p> </div> </article> </div> </section> <!-- STORE --> <section id="store" class="section"> <div class="container"> <div class="section-heading"> <div> <p class="eyebrow">The store</p> <h2>Explore the collection</h2> </div> <div class="filters"> <input id="searchInput" type="search" placeholder="Search perfume..." aria-label="Search perfumes"> <select id="categoryFilter" aria-label="Filter by category"> <option value="all">All categories</option> <option value="floral">Floral</option> <option value="woody">Woody</option> <option value="fresh">Fresh</option> <option value="oriental">Oriental</option> <option value="unisex">Unisex</option> </select> </div> </div> <div id="storeStatus" class="notice" hidden></div> <div id="productGrid" class="product-grid" aria-live="polite"> </div> </div> </section> <!-- ABOUT --> <section id="about" class="section section-alt"> <div class="container about-grid"> <div> <p class="eyebrow">About us</p> <h2> A marketplace built around the art of fragrance. </h2> </div> <div> <p> Jishin connects buyers with perfume sellers in one simple marketplace. Every listing can carry reviews and star ratings, helping shoppers make informed choices. </p> <p> Our interface follows the rule of thirds, clear contrast, a restrained warm-neutral color scheme, and a deliberate typographic hierarchy so the shopping path remains easy to understand. </p> </div> </div> </section> <!-- SELLER DASHBOARD --> <section id="dashboard" class="section"> <div class="container"> <div class="section-heading"> <div> <p class="eyebrow">Seller dashboard</p> <h2>List your own perfume</h2> </div> </div> <div id="dashboardGate" class="dashboard-card"> <h3>Sign in to sell</h3> <p> Create an account, add your GCash number, and you can publish perfume listings. </p> <button class="btn btn-primary" id="dashboardSignIn"> Sign in / Register </button> </div> <form id="productForm" class="form-card" hidden> <div class="form-row"> <label> Product name <input id="productName" required maxlength="120"> </label> <label> Price (PHP) <input id="productPrice" required type="number" min="250" max="250" step="0.01" value="250"> </label> </div> <div class="form-row"> <label> Category <select id="productCategory" required> <option value="floral">Floral</option> <option value="woody">Woody</option> <option value="fresh">Fresh</option> <option value="oriental">Oriental</option> <option value="unisex">Unisex</option> </select> </label> <label> Image URL <input id="productImage" type="url" placeholder="https://..."> </label> </div> <label> Description <textarea id="productDescription" required maxlength="1000" rows="4"> </textarea> </label> <div class="form-row"> <label> Your GCash number <input id="gcashNumber" inputmode="numeric" placeholder="09XXXXXXXXX" maxlength="13"> </label> <span class="field-help"> Your GCash number is stored with your account for seller records. It is not used as a payment credential. </span> </div> <button class="btn btn-primary" type="submit"> Publish product </button> <p id="productFormMessage" class="form-message" role="status"> </p> </form> <div id="myProducts" class="my-products"></div> </div> </section> <!-- CONTACT --> <section id="contact" class="section section-alt"> <div class="container contact-grid"> <div> <p class="eyebrow">Contacts</p> <h2> Need help with an order or listing? </h2> <p> Send us your question and our team will respond through your registered contact email. </p> </div> <form id="contactForm" class="form-card"> <label> Name <input id="contactName" required maxlength="100"> </label> <label> Email <input id="contactEmail" required type="email" maxlength="200"> </label> <label> Message <textarea id="contactMessage" required maxlength="2000" rows="5"> </textarea> </label> <button class="btn btn-primary" type="submit"> Send message </button> <p id="contactMessageStatus" class="form-message" role="status"> </p> </form> </div> </section> </main> <!-- FOOTER --> <footer class="site-footer"> <div class="container footer-grid"> <div> <a class="brand footer-brand" href="#home"> <span class="brand-mark">J</span> <span>Jishin</span> </a> <p> Fragrance discovery with a marketplace made for buyers and sellers. </p> </div> <div> <h3>Site map</h3> <a href="#home">Home</a> <a href="#store">Store Page</a> <a href="#about">About Us</a> <a href="#dashboard">Seller Dashboard</a> <a href="#contact">Contacts</a> </div> <div> <h3>Account</h3> <button class="footer-link" id="footerAuthBtn"> Sign in / Register </button> <button class="footer-link" id="footerCartBtn"> View cart </button> </div> </div> <div class="container footer-bottom"> <span> © <span id="year"></span> Jishin </span> <span> Payments powered by PayMongo </span> </div> </footer> <!-- AUTH MODAL --> <div id="authModal" class="modal" hidden> <div class="modal-backdrop" data-close-modal></div> <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle"> <button class="modal-close" data-close-modal aria-label="Close"> × </button> <p class="eyebrow">Account</p> <h2 id="authTitle"> Welcome to Jishin </h2> <div class="auth-tabs"> <button class="active" data-auth-mode="signin"> Sign in </button> <button data-auth-mode="signup"> Register </button> </div> <form id="authForm"> <label> Email <input id="authEmail" required type="email"> </label> <label> Password <input id="authPassword" required type="password" minlength="8"> </label> <label id="authGcashWrap" hidden> GCash number <input id="authGcash" inputmode="numeric" maxlength="13" placeholder="09XXXXXXXXX"> </label> <button class="btn btn-primary" id="authSubmit" type="submit"> Sign in </button> <p id="authMessage" class="form-message" role="status"> </p> </form> <button class="text-btn signout-btn" id="signOutBtn" hidden> Sign out </button> </section> </div> <!-- CART --> <aside id="cartDrawer" class="cart-drawer" aria-label="Shopping cart" aria-hidden="true"> <div class="cart-header"> <h2>Your cart</h2> <button id="cartClose" class="modal-close" aria-label="Close cart"> × </button> </div> <div id="cartItems"></div> <div class="cart-summary"> <div> <span>Total</span> <strong id="cartTotal">₱0.00</strong> </div> <button id="checkoutBtn" class="btn btn-primary"> Proceed to payment </button> <p id="checkoutMessage" class="form-message"> </p> </div> </aside> <!-- PRODUCT MODAL --> <div id="productModal" class="modal" hidden> <div class="modal-backdrop" data-close-modal></div> <section class="modal-card product-modal-card" role="dialog" aria-modal="true" aria-labelledby="productModalTitle"> <button class="modal-close" data-close-modal aria-label="Close"> × </button> <div id="productModalContent"></div> </section> </div> <!-- PUBLIC CONFIGURATION --> <script> window.SCENTORA_CONFIG = { SUPABASE_URL: "YOUR_SUPABASE_URL", SUPABASE_ANON_KEY: "YOUR_SUPABASE_ANON_KEY", VOICEFLOW_PROJECT_ID: "YOUR_VOICEFLOW_PROJECT_ID" }; </script> <script src="app.js"></script> <!-- VOICEFLOW --> <script> (function(d,t){ if ( !window.SCENTORA_CONFIG || window.SCENTORA_CONFIG.VOICEFLOW_PROJECT_ID === "YOUR_VOICEFLOW_PROJECT_ID" ) return; var v=d.createElement(t); var s=d.getElementsByTagName(t)[0]; v.onload=function(){ window.voiceflow.chat.load({ verify:{ projectID: window.SCENTORA_CONFIG.VOICEFLOW_PROJECT_ID }, url: "https://general-runtime.voiceflow.com", versionID: "production", voice:{ url: "https://runtime-api.voiceflow.com" } }); }; v.src = "https://cdn.voiceflow.com/widget-next/bundle.mjs"; v.type = "text/javascript"; s.parentNode.insertBefore(v,s); })(document,"script"); </script> </body> </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Jishin — a modern marketplace for discovering, reviewing, and selling perfumes.">
+  <title>Jishin | Perfume Marketplace</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="container nav-wrap">
+
+    <a class="brand" href="#home" aria-label="Jishin home">
+      <span class="brand-mark">J</span>
+      <span>Jishin</span>
+    </a>
+
+    <button
+      class="nav-toggle"
+      id="navToggle"
+      aria-expanded="false"
+      aria-controls="mainNav"
+      aria-label="Open menu">
+      ☰
+    </button>
+
+    <nav id="mainNav" class="main-nav" aria-label="Primary navigation">
+      <a href="#home">Home</a>
+      <a href="#about">About Us</a>
+      <a href="#contact">Contacts</a>
+      <a href="#dashboard">Seller Dashboard</a>
+      <a href="#store">Store Page</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="text-btn" id="authBtn">Sign in</button>
+
+      <button class="cart-btn" id="cartBtn" aria-label="Open cart">
+        Cart <span id="cartCount">0</span>
+      </button>
+    </div>
+
+  </div>
+</header>
+
+
+<main id="main">
+
+<!-- HERO -->
+
+<section id="home" class="hero">
+
+  <div class="container hero-grid">
+
+    <div class="hero-copy">
+
+      <p class="eyebrow">
+        Curated scents • Independent sellers • Secure checkout
+      </p>
+
+      <h1>
+        Find a fragrance that <em>feels like you.</em>
+      </h1>
+
+      <p class="hero-text">
+        Discover perfumes from emerging sellers and established collections,
+        compare community ratings, and check out securely with PayMongo.
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#store">
+          Shop perfumes
+        </a>
+
+        <a class="btn btn-secondary" href="#dashboard">
+          Sell your scent
+        </a>
+      </div>
+
+      <div class="hero-proof">
+        <span>★★★★★</span>
+        <strong> Community-rated scents</strong>
+      </div>
+
+    </div>
+
+
+    <div class="hero-art" aria-label="Featured perfume visual">
+
+      <div class="rule-third-line"></div>
+
+      <div class="perfume-bottle">
+
+        <div class="bottle-cap"></div>
+
+        <div class="bottle-neck"></div>
+
+        <div class="bottle-body">
+          <span>JISHIN</span>
+          <small>EAU DE PARFUM</small>
+        </div>
+
+      </div>
+
+      <div class="art-card art-card-top">
+        <b>01</b>
+        <span>
+          Signature<br>
+          collection
+        </span>
+      </div>
+
+      <div class="art-card art-card-bottom">
+        <span>Long-lasting</span>
+        <b>Notes that stay.</b>
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- FEATURES -->
+
+<section class="feature-strip">
+
+  <div class="container feature-grid">
+
+    <article>
+      <span class="feature-icon">✦</span>
+
+      <div>
+        <h3>Curated discovery</h3>
+        <p>
+          Browse scent profiles and community ratings.
+        </p>
+      </div>
+    </article>
+
+
+    <article>
+      <span class="feature-icon">◎</span>
+
+      <div>
+        <h3>Seller-friendly</h3>
+        <p>
+          Registered users can list their own perfumes.
+        </p>
+      </div>
+    </article>
+
+
+    <article>
+      <span class="feature-icon">✓</span>
+
+      <div>
+        <h3>Secure payments</h3>
+        <p>
+          PayMongo-hosted checkout keeps card data off-site.
+        </p>
+      </div>
+    </article>
+
+  </div>
+
+</section>
+
+
+<!-- STORE -->
+
+<section id="store" class="section">
+
+  <div class="container">
+
+    <div class="section-heading">
+
+      <div>
+        <p class="eyebrow">The store</p>
+        <h2>Explore the collection</h2>
+      </div>
+
+      <div class="filters">
+
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Search perfume..."
+          aria-label="Search perfumes">
+
+        <select id="categoryFilter" aria-label="Filter by category">
+          <option value="all">All categories</option>
+          <option value="floral">Floral</option>
+          <option value="woody">Woody</option>
+          <option value="fresh">Fresh</option>
+          <option value="oriental">Oriental</option>
+          <option value="unisex">Unisex</option>
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <div id="storeStatus" class="notice" hidden></div>
+
+    <div
+      id="productGrid"
+      class="product-grid"
+      aria-live="polite">
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ABOUT -->
+
+<section id="about" class="section section-alt">
+
+  <div class="container about-grid">
+
+    <div>
+
+      <p class="eyebrow">About us</p>
+
+      <h2>
+        A marketplace built around the art of fragrance.
+      </h2>
+
+    </div>
+
+
+    <div>
+
+      <p>
+        Jishin connects buyers with perfume sellers in one simple
+        marketplace. Every listing can carry reviews and star ratings,
+        helping shoppers make informed choices.
+      </p>
+
+      <p>
+        Our interface follows the rule of thirds, clear contrast,
+        a restrained warm-neutral color scheme, and a deliberate
+        typographic hierarchy so the shopping path remains easy to understand.
+      </p>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- SELLER DASHBOARD -->
+
+<section id="dashboard" class="section">
+
+  <div class="container">
+
+    <div class="section-heading">
+
+      <div>
+        <p class="eyebrow">Seller dashboard</p>
+        <h2>List your own perfume</h2>
+      </div>
+
+    </div>
+
+
+    <div id="dashboardGate" class="dashboard-card">
+
+      <h3>Sign in to sell</h3>
+
+      <p>
+        Create an account, add your GCash number,
+        and you can publish perfume listings.
+      </p>
+
+      <button class="btn btn-primary" id="dashboardSignIn">
+        Sign in / Register
+      </button>
+
+    </div>
+
+
+    <form id="productForm" class="form-card" hidden>
+
+      <div class="form-row">
+
+        <label>
+          Product name
+          <input
+            id="productName"
+            required
+            maxlength="120">
+        </label>
+
+        <label>
+          Price (PHP)
+          <input
+            id="productPrice"
+            required
+            type="number"
+            min="250"
+            max="250"
+            step="0.01"
+            value="250">
+        </label>
+
+      </div>
+
+
+      <div class="form-row">
+
+        <label>
+          Category
+
+          <select id="productCategory" required>
+            <option value="floral">Floral</option>
+            <option value="woody">Woody</option>
+            <option value="fresh">Fresh</option>
+            <option value="oriental">Oriental</option>
+            <option value="unisex">Unisex</option>
+          </select>
+
+        </label>
+
+
+        <label>
+          Image URL
+
+          <input
+            id="productImage"
+            type="url"
+            placeholder="https://...">
+        </label>
+
+      </div>
+
+
+      <label>
+        Description
+
+        <textarea
+          id="productDescription"
+          required
+          maxlength="1000"
+          rows="4">
+        </textarea>
+      </label>
+
+
+      <div class="form-row">
+
+        <label>
+          Your GCash number
+
+          <input
+            id="gcashNumber"
+            inputmode="numeric"
+            placeholder="09XXXXXXXXX"
+            maxlength="13">
+        </label>
+
+        <span class="field-help">
+          Your GCash number is stored with your account for seller records.
+          It is not used as a payment credential.
+        </span>
+
+      </div>
+
+
+      <button class="btn btn-primary" type="submit">
+        Publish product
+      </button>
+
+      <p
+        id="productFormMessage"
+        class="form-message"
+        role="status">
+      </p>
+
+    </form>
+
+
+    <div id="myProducts" class="my-products"></div>
+
+  </div>
+
+</section>
+
+
+<!-- CONTACT -->
+
+<section id="contact" class="section section-alt">
+
+  <div class="container contact-grid">
+
+    <div>
+
+      <p class="eyebrow">Contacts</p>
+
+      <h2>
+        Need help with an order or listing?
+      </h2>
+
+      <p>
+        Send us your question and our team will respond
+        through your registered contact email.
+      </p>
+
+    </div>
+
+
+    <form id="contactForm" class="form-card">
+
+      <label>
+        Name
+
+        <input
+          id="contactName"
+          required
+          maxlength="100">
+      </label>
+
+
+      <label>
+        Email
+
+        <input
+          id="contactEmail"
+          required
+          type="email"
+          maxlength="200">
+      </label>
+
+
+      <label>
+        Message
+
+        <textarea
+          id="contactMessage"
+          required
+          maxlength="2000"
+          rows="5">
+        </textarea>
+      </label>
+
+
+      <button class="btn btn-primary" type="submit">
+        Send message
+      </button>
+
+
+      <p
+        id="contactMessageStatus"
+        class="form-message"
+        role="status">
+      </p>
+
+    </form>
+
+  </div>
+
+</section>
+
+</main>
+
+
+<!-- FOOTER -->
+
+<footer class="site-footer">
+
+  <div class="container footer-grid">
+
+    <div>
+
+      <a class="brand footer-brand" href="#home">
+        <span class="brand-mark">J</span>
+        <span>Jishin</span>
+      </a>
+
+      <p>
+        Fragrance discovery with a marketplace
+        made for buyers and sellers.
+      </p>
+
+    </div>
+
+
+    <div>
+
+      <h3>Site map</h3>
+
+      <a href="#home">Home</a>
+      <a href="#store">Store Page</a>
+      <a href="#about">About Us</a>
+      <a href="#dashboard">Seller Dashboard</a>
+      <a href="#contact">Contacts</a>
+
+    </div>
+
+
+    <div>
+
+      <h3>Account</h3>
+
+      <button
+        class="footer-link"
+        id="footerAuthBtn">
+        Sign in / Register
+      </button>
+
+      <button
+        class="footer-link"
+        id="footerCartBtn">
+        View cart
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div class="container footer-bottom">
+
+    <span>
+      © <span id="year"></span> Jishin
+    </span>
+
+    <span>
+      Payments powered by PayMongo
+    </span>
+
+  </div>
+
+</footer>
+
+
+<!-- AUTH MODAL -->
+
+<div id="authModal" class="modal" hidden>
+
+  <div class="modal-backdrop" data-close-modal></div>
+
+  <section
+    class="modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="authTitle">
+
+    <button
+      class="modal-close"
+      data-close-modal
+      aria-label="Close">
+      ×
+    </button>
+
+
+    <p class="eyebrow">Account</p>
+
+    <h2 id="authTitle">
+      Welcome to Jishin
+    </h2>
+
+
+    <div class="auth-tabs">
+
+      <button
+        class="active"
+        data-auth-mode="signin">
+        Sign in
+      </button>
+
+      <button data-auth-mode="signup">
+        Register
+      </button>
+
+    </div>
+
+
+    <form id="authForm">
+
+      <label>
+        Email
+
+        <input
+          id="authEmail"
+          required
+          type="email">
+      </label>
+
+
+      <label>
+        Password
+
+        <input
+          id="authPassword"
+          required
+          type="password"
+          minlength="8">
+      </label>
+
+
+      <label id="authGcashWrap" hidden>
+
+        GCash number
+
+        <input
+          id="authGcash"
+          inputmode="numeric"
+          maxlength="13"
+          placeholder="09XXXXXXXXX">
+
+      </label>
+
+
+      <button
+        class="btn btn-primary"
+        id="authSubmit"
+        type="submit">
+        Sign in
+      </button>
+
+
+      <p
+        id="authMessage"
+        class="form-message"
+        role="status">
+      </p>
+
+    </form>
+
+
+    <button
+      class="text-btn signout-btn"
+      id="signOutBtn"
+      hidden>
+      Sign out
+    </button>
+
+  </section>
+
+</div>
+
+
+<!-- CART -->
+
+<aside
+  id="cartDrawer"
+  class="cart-drawer"
+  aria-label="Shopping cart"
+  aria-hidden="true">
+
+  <div class="cart-header">
+
+    <h2>Your cart</h2>
+
+    <button
+      id="cartClose"
+      class="modal-close"
+      aria-label="Close cart">
+      ×
+    </button>
+
+  </div>
+
+
+  <div id="cartItems"></div>
+
+
+  <div class="cart-summary">
+
+    <div>
+      <span>Total</span>
+      <strong id="cartTotal">₱0.00</strong>
+    </div>
+
+    <button
+      id="checkoutBtn"
+      class="btn btn-primary">
+      Proceed to payment
+    </button>
+
+    <p
+      id="checkoutMessage"
+      class="form-message">
+    </p>
+
+  </div>
+
+</aside>
+
+
+<!-- PRODUCT MODAL -->
+
+<div id="productModal" class="modal" hidden>
+
+  <div class="modal-backdrop" data-close-modal></div>
+
+  <section
+    class="modal-card product-modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="productModalTitle">
+
+    <button
+      class="modal-close"
+      data-close-modal
+      aria-label="Close">
+      ×
+    </button>
+
+    <div id="productModalContent"></div>
+
+  </section>
+
+</div>
+
+
+<!-- PUBLIC CONFIGURATION -->
+
+<script>
+
+window.SCENTORA_CONFIG = {
+
+  SUPABASE_URL:
+    "YOUR_SUPABASE_URL",
+
+  SUPABASE_ANON_KEY:
+    "YOUR_SUPABASE_ANON_KEY",
+
+  VOICEFLOW_PROJECT_ID:
+    "YOUR_VOICEFLOW_PROJECT_ID"
+
+};
+
+</script>
+
+
+<script src="app.js"></script>
+
+
+<!-- VOICEFLOW -->
+
+<script>
+
+(function(d,t){
+
+  if (
+    !window.SCENTORA_CONFIG ||
+    window.SCENTORA_CONFIG.VOICEFLOW_PROJECT_ID ===
+    "YOUR_VOICEFLOW_PROJECT_ID"
+  ) return;
+
+  var v=d.createElement(t);
+  var s=d.getElementsByTagName(t)[0];
+
+  v.onload=function(){
+
+    window.voiceflow.chat.load({
+
+      verify:{
+        projectID:
+          window.SCENTORA_CONFIG.VOICEFLOW_PROJECT_ID
+      },
+
+      url:
+        "https://general-runtime.voiceflow.com",
+
+      versionID:
+        "production",
+
+      voice:{
+        url:
+          "https://runtime-api.voiceflow.com"
+      }
+
+    });
+
+  };
+
+  v.src =
+    "https://cdn.voiceflow.com/widget-next/bundle.mjs";
+
+  v.type =
+    "text/javascript";
+
+  s.parentNode.insertBefore(v,s);
+
+})(document,"script");
+
+</script>
+
+</body>
+</html>
