@@ -1,3 +1,4 @@
+```javascript
 const cfg = window.SCENTORA_CONFIG || {};
 
 const hasSupabaseConfig =
@@ -33,8 +34,8 @@ const money = (n) =>
   new Intl.NumberFormat(
     "en-PH",
     {
-      style:"currency",
-      currency:"PHP"
+      style: "currency",
+      currency: "PHP"
     }
   ).format(Number(n || 0));
 
@@ -43,11 +44,11 @@ const escapeHtml = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
     c => ({
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#039;"
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
     }[c])
   );
 
@@ -65,7 +66,7 @@ const stars = (rating) => {
 
   return (
     "★".repeat(r) +
-    "☆".repeat(5-r)
+    "☆".repeat(5 - r)
   );
 };
 
@@ -84,7 +85,7 @@ function saveCart(){
 function cartQty(){
 
   return state.cart.reduce(
-    (s,i) => s + i.quantity,
+    (s, i) => s + i.quantity,
     0
   );
 
@@ -94,7 +95,7 @@ function cartQty(){
 function cartTotal(){
 
   return state.cart.reduce(
-    (s,i) =>
+    (s, i) =>
       s + Number(i.price) * i.quantity,
     0
   );
@@ -116,11 +117,11 @@ function addToCart(product){
   }else{
 
     state.cart.push({
-      id:product.id,
-      name:product.name,
-      price:Number(product.price),
-      image_url:product.image_url,
-      quantity:1
+      id: product.id,
+      name: product.name,
+      price: 250,
+      image_url: product.image_url,
+      quantity: 1
     });
 
   }
@@ -170,7 +171,7 @@ function renderCart(){
             </h3>
 
             <div>
-              ${money(i.price)}
+              ${money(250)}
             </div>
 
             <div class="qty">
@@ -246,51 +247,51 @@ function closeCart(){
 const demoProducts = [
 
   {
-    id:"demo-1",
-    name:"Velvet Bloom",
+    id: "demo-1",
+    name: "Velvet Bloom",
     description:
       "Soft rose, vanilla and warm amber.",
-    price:1499,
-    category:"floral",
-    image_url:"",
-    seller_id:null,
-    avg_rating:5
+    price: 250,
+    category: "floral",
+    image_url: "",
+    seller_id: null,
+    avg_rating: 5
   },
 
   {
-    id:"demo-2",
-    name:"Cedar After Rain",
+    id: "demo-2",
+    name: "Cedar After Rain",
     description:
       "Clean woods with a fresh mineral finish.",
-    price:1799,
-    category:"woody",
-    image_url:"",
-    seller_id:null,
-    avg_rating:4
+    price: 250,
+    category: "woody",
+    image_url: "",
+    seller_id: null,
+    avg_rating: 4
   },
 
   {
-    id:"demo-3",
-    name:"Citrus Veil",
+    id: "demo-3",
+    name: "Citrus Veil",
     description:
       "Bright citrus, white musk and airy florals.",
-    price:1299,
-    category:"fresh",
-    image_url:"",
-    seller_id:null,
-    avg_rating:4
+    price: 250,
+    category: "fresh",
+    image_url: "",
+    seller_id: null,
+    avg_rating: 4
   },
 
   {
-    id:"demo-4",
-    name:"Amber Nocturne",
+    id: "demo-4",
+    name: "Amber Nocturne",
     description:
       "Spiced amber, sandalwood and tonka bean.",
-    price:1999,
-    category:"oriental",
-    image_url:"",
-    seller_id:null,
-    avg_rating:5
+    price: 250,
+    category: "oriental",
+    image_url: "",
+    seller_id: null,
+    avg_rating: 5
   }
 
 ];
@@ -338,7 +339,7 @@ async function loadProducts(){
     )
     .order(
       "created_at",
-      {ascending:false}
+      {ascending: false}
     );
 
 
@@ -367,7 +368,7 @@ async function loadProducts(){
         const avg =
           rs.length
             ? rs.reduce(
-                (a,r) =>
+                (a, r) =>
                   a + Number(r.rating),
                 0
               ) / rs.length
@@ -380,6 +381,13 @@ async function loadProducts(){
 
         return {
           ...product,
+
+          /*
+           * Every product on Jishin
+           * costs exactly ₱250.00.
+           */
+          price: 250,
+
           avg_rating:
             Number(avg.toFixed(1))
         };
@@ -448,7 +456,7 @@ function renderProducts(){
                     <div
                       class="product-image placeholder"
                       aria-hidden="true">
-                      S
+                      J
                     </div>
                   `
               }
@@ -474,7 +482,7 @@ function renderProducts(){
                 <div class="product-meta">
 
                   <span class="price">
-                    ${money(p.price)}
+                    ${money(250)}
                   </span>
 
                   <span class="rating">
@@ -555,7 +563,7 @@ async function openProduct(id){
       )
       .order(
         "created_at",
-        {ascending:false}
+        {ascending: false}
       );
 
     reviews =
@@ -582,7 +590,7 @@ async function openProduct(id){
 
     <p>
       <strong>
-        ${money(p.price)}
+        ${money(250)}
       </strong>
 
       ·
@@ -655,7 +663,7 @@ async function openProduct(id){
                     type="radio"
                     name="rating"
                     value="${n}"
-                    ${n===5 ? "checked" : ""}>
+                    ${n === 5 ? "checked" : ""}>
 
                   <label
                     for="r${n}"
@@ -686,7 +694,8 @@ async function openProduct(id){
 
             <p
               id="reviewStatus"
-              class="form-message">
+              class="form-message"
+              role="status">
             </p>
 
           </form>
@@ -772,10 +781,10 @@ async function submitReview(
     .from("reviews")
     .upsert(
       {
-        product_id:productId,
-        user_id:state.user.id,
+        product_id: productId,
+        user_id: state.user.id,
         rating,
-        review_text:text
+        review_text: text
       },
       {
         onConflict:
@@ -836,7 +845,7 @@ function showAuth(){
   }else{
 
     $("authTitle").textContent =
-      "Welcome to Scentora";
+      "Welcome to Jishin";
 
     $("authForm").hidden =
       false;
@@ -1066,7 +1075,7 @@ async function loadProfile(){
 
 
   const {
-    data:products
+    data: products
   } =
     await supabase
       .from("products")
@@ -1079,7 +1088,7 @@ async function loadProfile(){
       )
       .order(
         "created_at",
-        {ascending:false}
+        {ascending: false}
       );
 
 
@@ -1100,7 +1109,7 @@ async function loadProfile(){
                 <span>
                   ${escapeHtml(p.name)}
                   ·
-                  ${money(p.price)}
+                  ${money(250)}
                 </span>
 
                 <span>
@@ -1139,11 +1148,12 @@ async function publishProduct(e){
       .value
       .trim();
 
-  const price =
-    Number(
-      $("productPrice")
-        .value
-    );
+
+  /*
+   * All seller products are ₱250.00.
+   */
+  const price = 250;
+
 
   const category =
     $("productCategory")
@@ -1187,7 +1197,7 @@ async function publishProduct(e){
 
 
   const {
-    error:profileError
+    error: profileError
   } =
     await supabase
       .from("profiles")
@@ -1295,7 +1305,7 @@ async function checkout(){
 
 
   const {
-    data:{
+    data: {
       session
     }
   } =
@@ -1308,9 +1318,9 @@ async function checkout(){
       "/api/create-checkout",
       {
 
-        method:"POST",
+        method: "POST",
 
-        headers:{
+        headers: {
           "Content-Type":
             "application/json",
 
@@ -1321,13 +1331,13 @@ async function checkout(){
 
         },
 
-        body:JSON.stringify({
+        body: JSON.stringify({
 
           items:
             state.cart.map(
               i => ({
-                id:i.id,
-                quantity:i.quantity
+                id: i.id,
+                quantity: i.quantity
               })
             )
 
@@ -1741,5 +1751,4 @@ if(supabase){
 renderCart();
 
 loadProducts();
-
-refreshUser();
+```
