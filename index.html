@@ -182,51 +182,67 @@
 
 <!-- STORE -->
 
-<section id="store" class="section">
+const products = [
+  {
+    name: "Noir Horizon",
+    description:
+      "A deep and sophisticated fragrance with warm amber, dark woods, and subtle spice.",
+    price: 250,
+    category: "woody",
+    image_url: "",
+    avg_rating: 0
+  },
 
-  <div class="container">
+  {
+    name: "Cedar Rush",
+    description:
+      "A fresh woody fragrance combining cedarwood, clean musk, and a touch of citrus.",
+    price: 250,
+    category: "woody",
+    image_url: "",
+    avg_rating: 0
+  },
 
-    <div class="section-heading">
+  {
+    name: "Ocean Edge",
+    description:
+      "A refreshing aquatic fragrance with cool citrus, marine notes, and clean musk.",
+    price: 250,
+    category: "fresh",
+    image_url: "",
+    avg_rating: 0
+  },
 
-      <div>
-        <p class="eyebrow">The store</p>
-        <h2>Explore the collection</h2>
-      </div>
+  {
+    name: "Velvet Rose",
+    description:
+      "A soft and romantic floral fragrance featuring fresh rose, vanilla, and delicate musk.",
+    price: 250,
+    category: "floral",
+    image_url: "",
+    avg_rating: 0
+  },
 
-      <div class="filters">
+  {
+    name: "Pearl Bloom",
+    description:
+      "A light and elegant floral scent with fresh pear, white flowers, and soft musk.",
+    price: 250,
+    category: "floral",
+    image_url: "",
+    avg_rating: 0
+  },
 
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Search perfume..."
-          aria-label="Search perfumes">
-
-        <select id="categoryFilter" aria-label="Filter by category">
-          <option value="all">All categories</option>
-          <option value="floral">Floral</option>
-          <option value="woody">Woody</option>
-          <option value="fresh">Fresh</option>
-          <option value="oriental">Oriental</option>
-          <option value="unisex">Unisex</option>
-        </select>
-
-      </div>
-
-    </div>
-
-
-    <div id="storeStatus" class="notice" hidden></div>
-
-    <div
-      id="productGrid"
-      class="product-grid"
-      aria-live="polite">
-    </div>
-
-  </div>
-
-</section>
-
+  {
+    name: "Amber Grace",
+    description:
+      "A warm fragrance combining sweet amber, vanilla, soft florals, and sandalwood.",
+    price: 250,
+    category: "oriental",
+    image_url: "",
+    avg_rating: 0
+  }
+];
 
 <!-- ABOUT -->
 
