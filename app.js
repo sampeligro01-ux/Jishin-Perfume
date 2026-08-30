@@ -1,1832 +1,1745 @@
-"use strict";
+const cfg = window.SCENTORA_CONFIG || {};
 
-/*
-    ============================================================
-    JISHIN SCENTS
-    Frontend application
-    ============================================================
+const hasSupabaseConfig =
+  cfg.SUPABASE_URL &&
+  !cfg.SUPABASE_URL.includes("YOUR_") &&
+  cfg.SUPABASE_ANON_KEY &&
+  !cfg.SUPABASE_ANON_KEY.includes("YOUR_");
 
-    IMPORTANT:
-    Replace the two Supabase placeholders below with:
+const supabase =
+  hasSupabaseConfig
+    ? window.supabase.createClient(
+        cfg.SUPABASE_URL,
+        cfg.SUPABASE_ANON_KEY
+      )
+    : null;
 
-    Supabase Dashboard
-    → Project Settings
-    → Data API / API
-    → Project URL
-    → Publishable key / anon key
-*/
-
-const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY";
-
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY,
-    {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-            detectSessionInUrl: true
-        }
-    }
-);
-
-
-/* ============================================================
-   STATE
-============================================================ */
 
 const state = {
-    user: null,
-    profile: null,
-    products: [],
-    reviews: [],
-    cart: loadCart(),
-    selectedProduct: null,
-    selectedRating: 5
+  products: [],
+  cart: JSON.parse(
+    localStorage.getItem("scentora_cart") || "[]"
+  ),
+  user: null,
+  authMode: "signin"
 };
 
 
-/* ============================================================
-   DOM HELPERS
-============================================================ */
-
-const $ = (selector) => document.querySelector(selector);
-
-const $$ = (selector) => document.querySelectorAll(selector);
-
-function escapeHtml(value) {
-
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
+const $ = (id) =>
+  document.getElementById(id);
 
 
-/* ============================================================
-   FORMATTERS
-============================================================ */
-
-function formatPHP(value) {
-
-    return new Intl.NumberFormat("en-PH", {
-        style: "currency",
-        currency: "PHP"
-    }).format(Number(value) || 0);
-}
-
-
-function formatDate(value) {
-
-    if (!value) return "";
-
-    return new Intl.DateTimeFormat("en-PH", {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-    }).format(new Date(value));
-}
-
-
-/* ============================================================
-   TOAST
-============================================================ */
-
-let toastTimer;
-
-function showToast(message) {
-
-    const toast = $("#toast");
-
-    toast.textContent = message;
-    toast.classList.add("active");
-
-    clearTimeout(toastTimer);
-
-    toastTimer = setTimeout(() => {
-        toast.classList.remove("active");
-    }, 3500);
-}
-
-
-/* ============================================================
-   MODALS
-============================================================ */
-
-function openModal(id) {
-
-    const modal = document.getElementById(id);
-
-    if (!modal) return;
-
-    modal.classList.add("active");
-    modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
-}
-
-
-function closeModal(id) {
-
-    const modal = document.getElementById(id);
-
-    if (!modal) return;
-
-    modal.classList.remove("active");
-    modal.setAttribute("aria-hidden", "true");
-
-    if (!document.querySelector(".modal.active")) {
-        document.body.style.overflow = "";
+const money = (n) =>
+  new Intl.NumberFormat(
+    "en-PH",
+    {
+      style:"currency",
+      currency:"PHP"
     }
+  ).format(Number(n || 0));
+
+
+const escapeHtml = (value) =>
+  String(value ?? "").replace(
+    /[&<>"']/g,
+    c => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#039;"
+    }[c])
+  );
+
+
+const stars = (rating) => {
+
+  const r =
+    Math.max(
+      0,
+      Math.min(
+        5,
+        Number(rating || 0)
+      )
+    );
+
+  return (
+    "★".repeat(r) +
+    "☆".repeat(5-r)
+  );
+};
+
+
+function saveCart(){
+
+  localStorage.setItem(
+    "scentora_cart",
+    JSON.stringify(state.cart)
+  );
+
+  renderCart();
 }
 
 
-$$("[data-close-modal]").forEach(button => {
+function cartQty(){
 
-    button.addEventListener("click", () => {
+  return state.cart.reduce(
+    (s,i) => s + i.quantity,
+    0
+  );
 
-        closeModal(button.dataset.closeModal);
+}
 
+
+function cartTotal(){
+
+  return state.cart.reduce(
+    (s,i) =>
+      s + Number(i.price) * i.quantity,
+    0
+  );
+
+}
+
+
+function addToCart(product){
+
+  const found =
+    state.cart.find(
+      i => i.id === product.id
+    );
+
+  if(found){
+
+    found.quantity += 1;
+
+  }else{
+
+    state.cart.push({
+      id:product.id,
+      name:product.name,
+      price:Number(product.price),
+      image_url:product.image_url,
+      quantity:1
     });
 
-});
+  }
 
+  saveCart();
 
-$$(".modal-overlay").forEach(overlay => {
-
-    overlay.addEventListener("click", () => {
-
-        const modal = overlay.closest(".modal");
-
-        if (modal) {
-            closeModal(modal.id);
-        }
-
-    });
-
-});
-
-
-/* ============================================================
-   MOBILE MENU
-============================================================ */
-
-$("#mobileMenuButton").addEventListener("click", () => {
-
-    $("#mainNavigation").classList.toggle("active");
-
-});
-
-
-$$(".main-navigation a").forEach(link => {
-
-    link.addEventListener("click", () => {
-
-        $("#mainNavigation").classList.remove("active");
-
-    });
-
-});
-
-
-/* ============================================================
-   CART
-============================================================ */
-
-function loadCart() {
-
-    try {
-
-        const saved = localStorage.getItem("jishin_scents_cart");
-
-        return saved ? JSON.parse(saved) : [];
-
-    } catch {
-
-        return [];
-
-    }
+  openCart();
 
 }
 
 
-function saveCart() {
+function renderCart(){
 
-    localStorage.setItem(
-        "jishin_scents_cart",
-        JSON.stringify(state.cart)
-    );
+  $("cartCount").textContent =
+    cartQty();
 
-}
+  $("cartTotal").textContent =
+    money(cartTotal());
 
 
-function getCartCount() {
+  $("cartItems").innerHTML =
+    state.cart.length
 
-    return state.cart.reduce(
-        (total, item) => total + Number(item.quantity),
-        0
-    );
-
-}
-
-
-function getCartTotal() {
-
-    return state.cart.reduce(
-        (total, item) =>
-            total + Number(item.price) * Number(item.quantity),
-        0
-    );
-
-}
-
-
-function updateCartBadge() {
-
-    $("#cartCount").textContent = getCartCount();
-
-}
-
-
-function addToCart(productId) {
-
-    const product = state.products.find(
-        item => item.id === productId
-    );
-
-    if (!product) return;
-
-    if (Number(product.stock) <= 0) {
-
-        showToast("This product is currently out of stock.");
-
-        return;
-
-    }
-
-    const existing = state.cart.find(
-        item => item.product_id === productId
-    );
-
-    if (existing) {
-
-        if (existing.quantity >= Number(product.stock)) {
-
-            showToast("You cannot add more than the available stock.");
-
-            return;
-
-        }
-
-        existing.quantity += 1;
-
-    } else {
-
-        state.cart.push({
-            product_id: product.id,
-            name: product.name,
-            price: Number(product.price),
-            image_url: product.image_url,
-            quantity: 1
-        });
-
-    }
-
-    saveCart();
-    renderCart();
-
-    showToast(`${product.name} added to your cart.`);
-
-}
-
-
-function removeFromCart(productId) {
-
-    state.cart = state.cart.filter(
-        item => item.product_id !== productId
-    );
-
-    saveCart();
-    renderCart();
-
-}
-
-
-function changeCartQuantity(productId, change) {
-
-    const item = state.cart.find(
-        cartItem => cartItem.product_id === productId
-    );
-
-    if (!item) return;
-
-    const product = state.products.find(
-        productItem => productItem.id === productId
-    );
-
-    const maxStock = product
-        ? Number(product.stock)
-        : Infinity;
-
-    item.quantity += change;
-
-    if (item.quantity < 1) {
-        removeFromCart(productId);
-        return;
-    }
-
-    if (item.quantity > maxStock) {
-
-        item.quantity = maxStock;
-
-        showToast("Quantity limited to available stock.");
-
-    }
-
-    saveCart();
-    renderCart();
-
-}
-
-
-function renderCart() {
-
-    updateCartBadge();
-
-    const container = $("#cartItems");
-
-    if (!state.cart.length) {
-
-        container.innerHTML = `
-            <div class="empty-state">
-                <h3>Your bag is empty.</h3>
-                <p>Add a fragrance from the store.</p>
-            </div>
-        `;
-
-        $("#cartTotal").textContent = formatPHP(0);
-
-        return;
-
-    }
-
-    container.innerHTML = state.cart.map(item => `
+      ? state.cart.map(i => `
 
         <div class="cart-item">
 
-            <img
-                class="cart-item-image"
-                src="${escapeHtml(item.image_url)}"
-                alt="${escapeHtml(item.name)}"
-                onerror="this.src='https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?auto=format&fit=crop&w=500&q=80'"
-            >
+          ${
+            i.image_url
+
+              ? `
+                <img
+                  class="cart-thumb"
+                  src="${escapeHtml(i.image_url)}"
+                  alt="">
+              `
+
+              : `
+                <div class="cart-thumb"></div>
+              `
+          }
+
+          <div>
+
+            <h3>
+              ${escapeHtml(i.name)}
+            </h3>
 
             <div>
+              ${money(i.price)}
+            </div>
 
-                <h4>${escapeHtml(item.name)}</h4>
+            <div class="qty">
 
-                <p>
-                    ${formatPHP(item.price)}
-                </p>
+              <button
+                data-cart-dec="${i.id}">
+                −
+              </button>
 
-                <div class="cart-quantity">
+              <span>
+                ${i.quantity}
+              </span>
 
-                    <button
-                        type="button"
-                        data-cart-minus="${escapeHtml(item.product_id)}"
-                    >
-                        −
-                    </button>
-
-                    <span>
-                        ${item.quantity}
-                    </span>
-
-                    <button
-                        type="button"
-                        data-cart-plus="${escapeHtml(item.product_id)}"
-                    >
-                        +
-                    </button>
-
-                </div>
+              <button
+                data-cart-inc="${i.id}">
+                +
+              </button>
 
             </div>
 
-            <button
-                type="button"
-                class="remove-cart-item"
-                data-cart-remove="${escapeHtml(item.product_id)}"
-            >
-                Remove
-            </button>
+          </div>
+
+          <button
+            class="small-btn"
+            data-cart-remove="${i.id}"
+            aria-label="Remove ${escapeHtml(i.name)}">
+            ×
+          </button>
 
         </div>
 
-    `).join("");
-
-    $("#cartTotal").textContent = formatPHP(getCartTotal());
-
-
-    $$("[data-cart-minus]").forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            changeCartQuantity(
-                button.dataset.cartMinus,
-                -1
-            );
-
-        });
-
-    });
-
-
-    $$("[data-cart-plus]").forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            changeCartQuantity(
-                button.dataset.cartPlus,
-                1
-            );
-
-        });
-
-    });
-
-
-    $$("[data-cart-remove]").forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            removeFromCart(
-                button.dataset.cartRemove
-            );
-
-        });
-
-    });
-
-}
-
-
-$("#cartButton").addEventListener("click", () => {
-
-    renderCart();
-
-    $("#cartDrawer").classList.add("active");
-    $("#cartDrawer").setAttribute("aria-hidden", "false");
-
-});
-
-
-$("#footerCartButton").addEventListener("click", () => {
-
-    renderCart();
-
-    $("#cartDrawer").classList.add("active");
-    $("#cartDrawer").setAttribute("aria-hidden", "false");
-
-});
-
-
-$("#closeCartButton").addEventListener("click", () => {
-
-    $("#cartDrawer").classList.remove("active");
-    $("#cartDrawer").setAttribute("aria-hidden", "true");
-
-});
-
-
-/* ============================================================
-   AUTH
-============================================================ */
-
-function updateAuthUI() {
-
-    const loggedIn = Boolean(state.user);
-
-    if (!loggedIn) {
-
-        $("#authForms").querySelector(".auth-tabs").hidden = false;
-
-        $("#loginForm").hidden = false;
-        $("#registerForm").hidden = true;
-        $("#accountProfile").hidden = true;
-
-        return;
-
-    }
-
-    $("#authForms").querySelector(".auth-tabs").hidden = true;
-
-    $("#loginForm").hidden = true;
-    $("#registerForm").hidden = true;
-    $("#accountProfile").hidden = false;
-
-    if (state.profile) {
-
-        $("#profileName").textContent =
-            state.profile.display_name || "Jishin User";
-
-        $("#profileEmail").textContent =
-            state.user.email || "";
-
-        $("#profileRole").textContent =
-            state.profile.role === "seller"
-                ? "Seller Account"
-                : "Buyer Account";
-
-        $("#profileDisplayName").value =
-            state.profile.display_name || "";
-
-        $("#profileGcash").value =
-            state.profile.gcash_number || "";
-
-        $("#sellerStatus").textContent =
-            state.profile.role === "seller"
-                ? "Seller Account"
-                : "Buyer Account";
-
-    }
-
-}
-
-
-$("#accountButton").addEventListener("click", () => {
-
-    updateAuthUI();
-    openModal("accountModal");
-
-});
-
-
-$("#footerAccountButton").addEventListener("click", () => {
-
-    updateAuthUI();
-    openModal("accountModal");
-
-});
-
-
-$("#loginTab").addEventListener("click", () => {
-
-    $("#loginTab").classList.add("active");
-    $("#registerTab").classList.remove("active");
-
-    $("#loginForm").hidden = false;
-    $("#registerForm").hidden = true;
-
-});
-
-
-$("#registerTab").addEventListener("click", () => {
-
-    $("#registerTab").classList.add("active");
-    $("#loginTab").classList.remove("active");
-
-    $("#loginForm").hidden = true;
-    $("#registerForm").hidden = false;
-
-});
-
-
-$("#loginForm").addEventListener("submit", async event => {
-
-    event.preventDefault();
-
-    const email = $("#loginEmail").value.trim();
-    const password = $("#loginPassword").value;
-
-    const { error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password
-    });
-
-    if (error) {
-
-        showToast(error.message);
-
-        return;
-
-    }
-
-    showToast("Signed in successfully.");
-
-    closeModal("accountModal");
-
-    await loadCurrentUser();
-
-});
-
-
-$("#registerForm").addEventListener("submit", async event => {
-
-    event.preventDefault();
-
-    const name = $("#registerName").value.trim();
-    const email = $("#registerEmail").value.trim();
-    const password = $("#registerPassword").value;
-    const gcash = $("#registerGcash").value.trim();
-
-    const { data, error } =
-        await supabaseClient.auth.signUp({
-
-            email,
-            password,
-
-            options: {
-                data: {
-                    display_name: name,
-                    gcash_number: gcash
-                }
-            }
-
-        });
-
-    if (error) {
-
-        showToast(error.message);
-
-        return;
-
-    }
-
-    if (!data.session) {
-
-        showToast(
-            "Account created. Check your email to confirm your account."
-        );
-
-    } else {
-
-        showToast("Account created successfully.");
-
-    }
-
-});
-
-
-$("#profileForm").addEventListener("submit", async event => {
-
-    event.preventDefault();
-
-    if (!state.user) return;
-
-    const displayName =
-        $("#profileDisplayName").value.trim();
-
-    const gcash =
-        $("#profileGcash").value.trim();
-
-    const { data, error } =
-        await supabaseClient.rpc(
-            "update_profile",
-            {
-                p_display_name: displayName,
-                p_gcash_number: gcash
-            }
-        );
-
-    if (error) {
-
-        showToast(error.message);
-
-        return;
-
-    }
-
-    state.profile = data;
-
-    updateAuthUI();
-
-    showToast("Profile updated.");
-
-});
-
-
-$("#logoutButton").addEventListener("click", async () => {
-
-    const { error } = await supabaseClient.auth.signOut();
-
-    if (error) {
-
-        showToast(error.message);
-
-        return;
-
-    }
-
-    state.user = null;
-    state.profile = null;
-
-    updateAuthUI();
-
-    closeModal("accountModal");
-
-    showToast("Signed out.");
-
-});
-
-
-async function loadCurrentUser() {
-
-    const {
-        data: {
-            session
-        }
-    } = await supabaseClient.auth.getSession();
-
-    state.user = session?.user || null;
-
-    if (!state.user) {
-
-        state.profile = null;
-
-        updateAuthUI();
-
-        return;
-
-    }
-
-    const {
-        data,
-        error
-    } = await supabaseClient
-        .from("profiles")
-        .select("*")
-        .eq("id", state.user.id)
-        .maybeSingle();
-
-    if (error) {
-
-        console.error(error);
-
-        showToast(
-            "Unable to load your profile."
-        );
-
-        return;
-
-    }
-
-    state.profile = data;
-
-    updateAuthUI();
-
-    await loadSellerProducts();
-
-}
-
-
-supabaseClient.auth.onAuthStateChange(
-    async (event, session) => {
-
-        state.user = session?.user || null;
-
-        if (!state.user) {
-
-            state.profile = null;
-
-            updateAuthUI();
-
-            return;
-
-        }
-
-        await loadCurrentUser();
-
-    }
-);
-
-
-/* ============================================================
-   PRODUCTS
-============================================================ */
-
-async function loadProducts() {
-
-    const grid = $("#productsGrid");
-
-    grid.innerHTML = `
-        <div class="empty-state">
-            <h3>Loading scents...</h3>
-            <p>Please wait.</p>
+      `).join("")
+
+      : `
+        <div class="empty">
+          Your cart is empty.
         </div>
-    `;
+      `;
 
-    const {
-        data,
-        error
-    } = await supabaseClient
-        .from("products")
-        .select(`
-            id,
-            name,
-            slug,
-            description,
-            price,
-            image_url,
-            stock,
-            is_active,
-            seller_id,
-            created_at
-        `)
-        .eq("is_active", true)
-        .gt("stock", 0)
-        .order("created_at", {
-            ascending: false
-        });
+}
 
-    if (error) {
 
-        console.error(error);
+function openCart(){
 
-        grid.innerHTML = `
-            <div class="empty-state">
-                <h3>Store unavailable.</h3>
-                <p>${escapeHtml(error.message)}</p>
-            </div>
-        `;
+  $("cartDrawer")
+    .classList.add("open");
 
-        return;
+  $("cartDrawer")
+    .setAttribute(
+      "aria-hidden",
+      "false"
+    );
 
-    }
+}
 
-    state.products = data || [];
 
-    await loadReviews();
+function closeCart(){
+
+  $("cartDrawer")
+    .classList.remove("open");
+
+  $("cartDrawer")
+    .setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+}
+
+
+/* DEMO PRODUCTS */
+
+const demoProducts = [
+
+  {
+    id:"demo-1",
+    name:"Velvet Bloom",
+    description:
+      "Soft rose, vanilla and warm amber.",
+    price:1499,
+    category:"floral",
+    image_url:"",
+    seller_id:null,
+    avg_rating:5
+  },
+
+  {
+    id:"demo-2",
+    name:"Cedar After Rain",
+    description:
+      "Clean woods with a fresh mineral finish.",
+    price:1799,
+    category:"woody",
+    image_url:"",
+    seller_id:null,
+    avg_rating:4
+  },
+
+  {
+    id:"demo-3",
+    name:"Citrus Veil",
+    description:
+      "Bright citrus, white musk and airy florals.",
+    price:1299,
+    category:"fresh",
+    image_url:"",
+    seller_id:null,
+    avg_rating:4
+  },
+
+  {
+    id:"demo-4",
+    name:"Amber Nocturne",
+    description:
+      "Spiced amber, sandalwood and tonka bean.",
+    price:1999,
+    category:"oriental",
+    image_url:"",
+    seller_id:null,
+    avg_rating:5
+  }
+
+];
+
+
+async function loadProducts(){
+
+  if(!supabase){
+
+    state.products =
+      demoProducts;
 
     renderProducts();
 
-}
+    $("storeStatus").hidden =
+      false;
+
+    $("storeStatus").textContent =
+      "Demo mode: add your Supabase URL and anon key in index.html to load the live catalog.";
+
+    return;
+
+  }
 
 
-async function loadReviews() {
-
-    const {
-        data,
-        error
-    } = await supabaseClient
-        .from("product_reviews")
-        .select(`
-            id,
-            product_id,
-            rating,
-            review,
-            created_at
-        `)
-        .order("created_at", {
-            ascending: false
-        });
-
-    if (error) {
-
-        console.error(error);
-
-        state.reviews = [];
-
-        return;
-
-    }
-
-    state.reviews = data || [];
-
-}
-
-
-function getProductRating(productId) {
-
-    const reviews = state.reviews.filter(
-        review => review.product_id === productId
+  const {
+    data,
+    error
+  } = await supabase
+    .from("products")
+    .select(`
+      id,
+      name,
+      description,
+      price,
+      category,
+      image_url,
+      seller_id,
+      created_at,
+      reviews(rating)
+    `)
+    .eq(
+      "is_active",
+      true
+    )
+    .order(
+      "created_at",
+      {ascending:false}
     );
 
-    if (!reviews.length) {
+
+  if(error){
+
+    $("storeStatus").hidden =
+      false;
+
+    $("storeStatus").textContent =
+      "Unable to load the catalog. Check your Supabase configuration.";
+
+    console.error(error);
+
+    return;
+
+  }
+
+
+  state.products =
+    (data || []).map(
+      p => {
+
+        const rs =
+          p.reviews || [];
+
+        const avg =
+          rs.length
+            ? rs.reduce(
+                (a,r) =>
+                  a + Number(r.rating),
+                0
+              ) / rs.length
+            : 0;
+
+        const {
+          reviews,
+          ...product
+        } = p;
 
         return {
-            average: 0,
-            count: 0
+          ...product,
+          avg_rating:
+            Number(avg.toFixed(1))
         };
 
-    }
-
-    const total = reviews.reduce(
-        (sum, review) =>
-            sum + Number(review.rating),
-        0
+      }
     );
 
-    return {
-        average: total / reviews.length,
-        count: reviews.length
-    };
+
+  $("storeStatus").hidden =
+    true;
+
+  renderProducts();
 
 }
 
 
-function renderStars(rating) {
+function renderProducts(){
 
-    const rounded = Math.round(Number(rating) || 0);
+  const q =
+    $("searchInput")
+      .value
+      .trim()
+      .toLowerCase();
 
-    return "★★★★★"
-        .split("")
-        .map((star, index) =>
-            `<span style="opacity:${index < rounded ? "1" : "0.25"}">${star}</span>`
+  const cat =
+    $("categoryFilter")
+      .value;
+
+
+  const products =
+    state.products.filter(
+      p =>
+        (cat === "all" ||
+         p.category === cat)
+
+        &&
+
+        (
+          `${p.name} ${p.description || ""}`
         )
-        .join("");
+        .toLowerCase()
+        .includes(q)
+    );
 
-}
 
+  $("productGrid").innerHTML =
+    products.length
 
-function renderProducts() {
-
-    const grid = $("#productsGrid");
-
-    if (!state.products.length) {
-
-        grid.innerHTML = "";
-
-        $("#emptyProducts").hidden = false;
-
-        return;
-
-    }
-
-    $("#emptyProducts").hidden = true;
-
-    grid.innerHTML = state.products.map(product => {
-
-        const rating =
-            getProductRating(product.id);
-
-        return `
+      ? products.map(
+          p => `
 
             <article class="product-card">
 
-                <div class="product-image">
+              ${
+                p.image_url
 
+                  ? `
                     <img
-                        src="${escapeHtml(product.image_url)}"
-                        alt="${escapeHtml(product.name)}"
-                        loading="lazy"
-                        onerror="this.src='https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?auto=format&fit=crop&w=800&q=80'"
-                    >
+                      class="product-image"
+                      src="${escapeHtml(p.image_url)}"
+                      alt="${escapeHtml(p.name)}"
+                      loading="lazy">
+                  `
+
+                  : `
+                    <div
+                      class="product-image placeholder"
+                      aria-hidden="true">
+                      S
+                    </div>
+                  `
+              }
+
+
+              <div class="product-info">
+
+                <span class="product-category">
+                  ${escapeHtml(p.category)}
+                </span>
+
+                <h3 class="product-name">
+                  ${escapeHtml(p.name)}
+                </h3>
+
+                <p class="product-desc">
+                  ${escapeHtml(
+                    p.description || ""
+                  )}
+                </p>
+
+
+                <div class="product-meta">
+
+                  <span class="price">
+                    ${money(p.price)}
+                  </span>
+
+                  <span class="rating">
+                    ${stars(p.avg_rating || 0)}
+                  </span>
 
                 </div>
 
-                <div class="product-info">
 
-                    <span class="product-category">
-                        Jishin Marketplace
-                    </span>
+                <div class="product-actions">
 
-                    <h3>
-                        ${escapeHtml(product.name)}
-                    </h3>
+                  <button
+                    class="small-btn"
+                    data-view="${p.id}">
+                    Reviews
+                  </button>
 
-                    <div class="product-rating">
-
-                        ${renderStars(rating.average)}
-
-                        <span>
-                            ${rating.count
-                                ? `${rating.average.toFixed(1)} (${rating.count})`
-                                : "No reviews"}
-                        </span>
-
-                    </div>
-
-                    <p class="product-description">
-                        ${escapeHtml(
-                            product.description.length > 120
-                                ? product.description.slice(0, 120) + "..."
-                                : product.description
-                        )}
-                    </p>
-
-                    <div class="product-bottom">
-
-                        <div>
-
-                            <div class="product-price">
-                                ${formatPHP(product.price)}
-                            </div>
-
-                            <div class="product-stock">
-                                ${product.stock} available
-                            </div>
-
-                        </div>
-
-                        <div class="product-actions">
-
-                            <button
-                                type="button"
-                                class="outline-button"
-                                data-view-product="${escapeHtml(product.id)}"
-                            >
-                                View
-                            </button>
-
-                            <button
-                                type="button"
-                                class="primary-button"
-                                data-add-product="${escapeHtml(product.id)}"
-                            >
-                                Add
-                            </button>
-
-                        </div>
-
-                    </div>
+                  <button
+                    class="small-btn primary"
+                    data-add="${p.id}">
+                    Add to cart
+                  </button>
 
                 </div>
+
+              </div>
 
             </article>
 
-        `;
+          `
+        ).join("")
 
-    }).join("");
+      : `
+        <div
+          class="empty"
+          style="grid-column:1/-1">
 
-
-    $$("[data-add-product]").forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            addToCart(button.dataset.addProduct);
-
-        });
-
-    });
-
-
-    $$("[data-view-product]").forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            openProduct(button.dataset.viewProduct);
-
-        });
-
-    });
-
-}
-
-
-$("#refreshProductsButton").addEventListener(
-    "click",
-    loadProducts
-);
-
-
-/* ============================================================
-   PRODUCT DETAIL / REVIEWS
-============================================================ */
-
-function openProduct(productId) {
-
-    const product = state.products.find(
-        item => item.id === productId
-    );
-
-    if (!product) return;
-
-    state.selectedProduct = product;
-    state.selectedRating = 5;
-
-    const productReviews =
-        state.reviews.filter(
-            review => review.product_id === productId
-        );
-
-    const rating =
-        getProductRating(productId);
-
-    $("#productModalContent").innerHTML = `
-
-        <div class="product-detail">
-
-            <div class="product-detail-image">
-
-                <img
-                    src="${escapeHtml(product.image_url)}"
-                    alt="${escapeHtml(product.name)}"
-                    onerror="this.src='https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?auto=format&fit=crop&w=800&q=80'"
-                >
-
-            </div>
-
-            <div class="product-detail-info">
-
-                <span class="eyebrow">
-                    JISHIN SCENTS
-                </span>
-
-                <h2>
-                    ${escapeHtml(product.name)}
-                </h2>
-
-                <div class="product-rating">
-                    ${renderStars(rating.average)}
-                    ${rating.count
-                        ? `${rating.average.toFixed(1)} / 5`
-                        : "No ratings yet"}
-                </div>
-
-                <div class="detail-price">
-                    ${formatPHP(product.price)}
-                </div>
-
-                <p>
-                    ${escapeHtml(product.description)}
-                </p>
-
-                <p class="product-stock">
-                    ${product.stock} unit(s) available
-                </p>
-
-                <button
-                    type="button"
-                    class="primary-button full-width"
-                    id="detailAddToCart"
-                >
-                    Add to Cart
-                </button>
-
-                <div class="review-section">
-
-                    <h3>
-                        Customer Reviews
-                    </h3>
-
-                    <form id="reviewForm">
-
-                        <div>
-
-                            <label>
-                                Rating
-                            </label>
-
-                            <div
-                                class="stars"
-                                id="reviewStars"
-                            >
-
-                                ${[1,2,3,4,5].map(number => `
-                                    <button
-                                        type="button"
-                                        class="star-button ${number <= 5 ? "selected" : ""}"
-                                        data-rating="${number}"
-                                    >
-                                        ★
-                                    </button>
-                                `).join("")}
-
-                            </div>
-
-                        </div>
-
-                        <label>
-                            Your Review
-
-                            <textarea
-                                id="reviewText"
-                                maxlength="1000"
-                                required
-                                placeholder="Share your experience..."
-                            ></textarea>
-
-                        </label>
-
-                        <button
-                            type="submit"
-                            class="outline-button"
-                        >
-                            Submit Review
-                        </button>
-
-                    </form>
-
-                    <div class="review-list">
-
-                        ${
-                            productReviews.length
-                                ? productReviews.map(review => `
-                                    <div class="review-item">
-
-                                        <div class="review-stars">
-                                            ${renderStars(review.rating)}
-                                        </div>
-
-                                        <p>
-                                            ${escapeHtml(review.review)}
-                                        </p>
-
-                                        <small>
-                                            ${formatDate(review.created_at)}
-                                        </small>
-
-                                    </div>
-                                `).join("")
-                                : `
-                                    <p>
-                                        No reviews yet.
-                                        Be the first to review this product.
-                                    </p>
-                                `
-                        }
-
-                    </div>
-
-                </div>
-
-            </div>
+          No perfumes match your search.
 
         </div>
-
-    `;
-
-    $("#detailAddToCart").addEventListener(
-        "click",
-        () => addToCart(product.id)
-    );
-
-
-    $$("[data-rating]").forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            state.selectedRating =
-                Number(button.dataset.rating);
-
-            updateRatingButtons();
-
-        });
-
-    });
-
-
-    $("#reviewForm").addEventListener(
-        "submit",
-        submitReview
-    );
-
-    updateRatingButtons();
-
-    openModal("productModal");
+      `;
 
 }
 
 
-function updateRatingButtons() {
+async function openProduct(id){
 
-    $$("[data-rating]").forEach(button => {
+  const p =
+    state.products.find(
+      x => x.id === id
+    );
 
-        const rating =
-            Number(button.dataset.rating);
-
-        button.classList.toggle(
-            "selected",
-            rating <= state.selectedRating
-        );
-
-    });
-
-}
+  if(!p) return;
 
 
-async function submitReview(event) {
+  let reviews = [];
 
-    event.preventDefault();
 
-    if (!state.user) {
-
-        showToast(
-            "Please sign in before submitting a review."
-        );
-
-        return;
-
-    }
-
-    if (!state.selectedProduct) return;
-
-    const review =
-        $("#reviewText").value.trim();
-
-    if (!review) return;
+  if(
+    supabase &&
+    !String(id).startsWith("demo-")
+  ){
 
     const {
-        error
-    } = await supabaseClient
-        .from("product_reviews")
-        .insert({
-            product_id: state.selectedProduct.id,
-            user_id: state.user.id,
-            rating: state.selectedRating,
-            review
-        });
+      data
+    } = await supabase
+      .from("reviews")
+      .select(`
+        id,
+        rating,
+        review_text,
+        created_at,
+        user_id
+      `)
+      .eq(
+        "product_id",
+        id
+      )
+      .order(
+        "created_at",
+        {ascending:false}
+      );
 
-    if (error) {
+    reviews =
+      data || [];
 
-        if (
-            error.code === "23505"
-        ) {
+  }
 
-            showToast(
-                "You have already reviewed this product."
-            );
 
-        } else {
+  $("productModalContent").innerHTML = `
 
-            showToast(error.message);
+    <p class="eyebrow">
+      ${escapeHtml(p.category)}
+    </p>
 
-        }
+    <h2 id="productModalTitle">
+      ${escapeHtml(p.name)}
+    </h2>
 
-        return;
+    <p>
+      ${escapeHtml(
+        p.description || ""
+      )}
+    </p>
 
+    <p>
+      <strong>
+        ${money(p.price)}
+      </strong>
+
+      ·
+
+      <span class="stars">
+        ${stars(p.avg_rating || 0)}
+      </span>
+
+    </p>
+
+
+    <div class="review-list">
+
+      <h3>
+        Customer reviews
+      </h3>
+
+      ${
+        reviews.length
+
+          ? reviews.map(
+              r => `
+
+                <div class="review">
+
+                  <div class="stars">
+                    ${stars(r.rating)}
+                  </div>
+
+                  <p>
+                    ${escapeHtml(
+                      r.review_text ||
+                      "No written review."
+                    )}
+                  </p>
+
+                </div>
+
+              `
+            ).join("")
+
+          : `
+            <p class="field-help">
+              No reviews yet.
+            </p>
+          `
+      }
+
+    </div>
+
+
+    ${
+      supabase &&
+      state.user &&
+      !String(id).startsWith("demo-")
+
+        ? `
+
+          <form
+            class="review-form"
+            id="reviewForm">
+
+            <div class="star-input">
+
+              ${[5,4,3,2,1].map(
+                n => `
+
+                  <input
+                    id="r${n}"
+                    type="radio"
+                    name="rating"
+                    value="${n}"
+                    ${n===5 ? "checked" : ""}>
+
+                  <label
+                    for="r${n}"
+                    title="${n} stars">
+                    ★
+                  </label>
+
+                `
+              ).join("")}
+
+            </div>
+
+
+            <textarea
+              id="reviewText"
+              rows="3"
+              maxlength="1000"
+              placeholder="Share your experience">
+            </textarea>
+
+
+            <button
+              class="btn btn-primary"
+              type="submit">
+              Submit review
+            </button>
+
+
+            <p
+              id="reviewStatus"
+              class="form-message">
+            </p>
+
+          </form>
+
+        `
+
+        : `
+
+          <p class="field-help">
+            ${
+              supabase
+                ? "Sign in to write a review."
+                : "Connect Supabase to enable reviews."
+            }
+          </p>
+
+        `
     }
 
-    showToast(
-        "Review submitted successfully."
+  `;
+
+
+  $("productModal").hidden =
+    false;
+
+
+  const form =
+    $("reviewForm");
+
+
+  if(form){
+
+    form.addEventListener(
+      "submit",
+      e =>
+        submitReview(
+          e,
+          p.id
+        )
     );
 
-    $("#reviewText").value = "";
+  }
+
+}
+
+
+async function submitReview(
+  e,
+  productId
+){
+
+  e.preventDefault();
+
+
+  const status =
+    $("reviewStatus");
+
+
+  const rating =
+    Number(
+      new FormData(
+        e.currentTarget
+      ).get("rating")
+    );
+
+
+  const text =
+    $("reviewText")
+      .value
+      .trim();
+
+
+  if(!rating) return;
+
+
+  status.textContent =
+    "Saving...";
+
+
+  const {
+    error
+  } = await supabase
+    .from("reviews")
+    .upsert(
+      {
+        product_id:productId,
+        user_id:state.user.id,
+        rating,
+        review_text:text
+      },
+      {
+        onConflict:
+          "product_id,user_id"
+      }
+    );
+
+
+  status.textContent =
+    error
+      ? "Unable to save review."
+      : "Review saved.";
+
+
+  if(!error){
 
     await loadProducts();
 
-    openProduct(state.selectedProduct.id);
-
-}
-
-
-/* ============================================================
-   SELLER
-============================================================ */
-
-async function becomeSeller() {
-
-    if (!state.user) {
-
-        showToast(
-            "Please create an account first."
-        );
-
-        openModal("accountModal");
-
-        return;
-
-    }
-
-    if (state.profile?.role === "seller") {
-
-        showToast(
-            "You are already a seller."
-        );
-
-        openSellerModal();
-
-        return;
-
-    }
-
-    const {
-        data,
-        error
-    } = await supabaseClient.rpc(
-        "become_seller"
+    await openProduct(
+      productId
     );
 
-    if (error) {
+  }
 
-        showToast(error.message);
+}
 
-        return;
 
-    }
+/* AUTH */
 
-    state.profile = data;
+function showAuth(){
 
-    updateAuthUI();
+  $("authModal").hidden =
+    false;
 
-    showToast(
-        "Your seller account is now active."
+  $("authMessage").textContent =
+    "";
+
+  $("authSubmit").textContent =
+    state.authMode === "signin"
+      ? "Sign in"
+      : "Create account";
+
+  $("authGcashWrap").hidden =
+    state.authMode !== "signup";
+
+  $("signOutBtn").hidden =
+    !state.user;
+
+
+  if(state.user){
+
+    $("authTitle").textContent =
+      `Signed in as ${state.user.email}`;
+
+    $("authForm").hidden =
+      true;
+
+  }else{
+
+    $("authTitle").textContent =
+      "Welcome to Scentora";
+
+    $("authForm").hidden =
+      false;
+
+  }
+
+}
+
+
+function closeModals(){
+
+  document
+    .querySelectorAll(".modal")
+    .forEach(
+      m => m.hidden = true
     );
 
-    openSellerModal();
-
 }
 
 
-$("#becomeSellerButton").addEventListener(
-    "click",
-    becomeSeller
-);
+async function handleAuth(e){
+
+  e.preventDefault();
 
 
-$("#openSellerFormButton").addEventListener(
-    "click",
-    openSellerModal
-);
+  if(!supabase){
+
+    $("authMessage").textContent =
+      "Connect Supabase first.";
+
+    return;
+
+  }
 
 
-function openSellerModal() {
+  const email =
+    $("authEmail")
+      .value
+      .trim();
 
-    if (!state.user) {
+  const password =
+    $("authPassword")
+      .value;
 
-        showToast(
-            "Please sign in first."
-        );
-
-        openModal("accountModal");
-
-        return;
-
-    }
-
-    if (state.profile?.role !== "seller") {
-
-        showToast(
-            "Become a seller before posting products."
-        );
-
-        return;
-
-    }
-
-    openModal("sellerModal");
-
-}
+  const gcash =
+    $("authGcash")
+      .value
+      .trim();
 
 
-$("#productForm").addEventListener(
-    "submit",
-    async event => {
-
-        event.preventDefault();
-
-        if (!state.user) {
-
-            showToast(
-                "Please sign in."
-            );
-
-            return;
-
-        }
-
-        if (state.profile?.role !== "seller") {
-
-            showToast(
-                "Seller access is required."
-            );
-
-            return;
-
-        }
-
-        const name =
-            $("#productName").value.trim();
-
-        const description =
-            $("#productDescription").value.trim();
-
-        const price =
-            Number($("#productPrice").value);
-
-        const stock =
-            Number($("#productStock").value);
-
-        const imageUrl =
-            $("#productImage").value.trim();
-
-        if (
-            !name ||
-            !description ||
-            !Number.isFinite(price) ||
-            price <= 0 ||
-            !Number.isInteger(stock) ||
-            stock < 0 ||
-            !imageUrl
-        ) {
-
-            showToast(
-                "Please enter valid product information."
-            );
-
-            return;
-
-        }
-
-        const slug =
-            name
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/(^-|-$)/g, "")
-                .slice(0, 80)
-            + "-"
-            + crypto.randomUUID().slice(0, 8);
+  $("authMessage").textContent =
+    "Working...";
 
 
-        const {
-            error
-        } = await supabaseClient
-            .from("products")
-            .insert({
-                seller_id: state.user.id,
-                name,
-                slug,
-                description,
-                price,
-                stock,
-                image_url,
-                is_active: true
-            });
-
-        if (error) {
-
-            showToast(error.message);
-
-            return;
-
-        }
-
-        showToast(
-            "Product published successfully."
-        );
-
-        $("#productForm").reset();
-
-        closeModal("sellerModal");
-
-        await loadProducts();
-        await loadSellerProducts();
-
-    }
-);
-
-
-async function loadSellerProducts() {
-
-    if (!state.user) {
-
-        $("#sellerProductCount").textContent = "0";
-
-        return;
-
-    }
+  if(
+    state.authMode ===
+    "signin"
+  ){
 
     const {
-        data,
-        error
-    } = await supabaseClient
-        .from("products")
-        .select("id")
-        .eq("seller_id", state.user.id);
+      error
+    } =
+      await supabase.auth
+        .signInWithPassword({
+          email,
+          password
+        });
 
-    if (error) {
 
-        console.error(error);
+    $("authMessage").textContent =
+      error
+        ? error.message
+        : "Signed in.";
 
-        return;
+  }else{
+
+    if(
+      gcash &&
+      !/^09\d{9}$/.test(gcash)
+    ){
+
+      $("authMessage").textContent =
+        "Enter a valid 11-digit GCash number.";
+
+      return;
 
     }
 
-    $("#sellerProductCount").textContent =
-        data?.length || 0;
+
+    const {
+      data,
+      error
+    } =
+      await supabase.auth
+        .signUp({
+
+          email,
+          password,
+
+          options:{
+            data:{
+              gcash_number:
+                gcash || null
+            }
+          }
+
+        });
+
+
+    if(error){
+
+      $("authMessage").textContent =
+        error.message;
+
+      return;
+
+    }
+
+
+    if(
+      data.user &&
+      !data.session
+    ){
+
+      $("authMessage").textContent =
+        "Account created. Check your email if email confirmation is enabled.";
+
+    }else{
+
+      $("authMessage").textContent =
+        "Account created.";
+
+    }
+
+  }
 
 }
 
 
-/* ============================================================
-   PAYMONGO CHECKOUT
-============================================================ */
+async function refreshUser(){
 
-async function startCheckout() {
+  if(!supabase){
 
-    if (!state.cart.length) {
+    state.user =
+      null;
 
-        showToast(
-            "Your shopping cart is empty."
-        );
+    updateAccountUI();
 
-        return;
+    return;
 
-    }
-
-    if (!state.user) {
-
-        showToast(
-            "Please sign in before checkout."
-        );
-
-        openModal("accountModal");
-
-        return;
-
-    }
-
-    const sessionResult =
-        await supabaseClient.auth.getSession();
-
-    const session =
-        sessionResult.data.session;
-
-    if (!session) {
-
-        showToast(
-            "Your session has expired. Please sign in again."
-        );
-
-        return;
-
-    }
-
-    const items =
-        state.cart.map(item => ({
-            product_id: item.product_id,
-            quantity: item.quantity
-        }));
+  }
 
 
-    const button = $("#checkoutButton");
-
-    const originalText =
-        button.textContent;
-
-    button.disabled = true;
-    button.textContent =
-        "Creating checkout...";
+  const {
+    data
+  } =
+    await supabase.auth
+      .getUser();
 
 
-    try {
-
-        const response =
-            await fetch(
-                "/api/create-checkout",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization":
-                            `Bearer ${session.access_token}`
-                    },
-
-                    body: JSON.stringify({
-                        items
-                    })
-                }
-            );
+  state.user =
+    data.user || null;
 
 
-        const result =
-            await response.json();
+  updateAccountUI();
+
+}
 
 
-        if (!response.ok) {
+function updateAccountUI(){
 
-            throw new Error(
-                result.error ||
-                "Unable to create checkout."
-            );
+  $("authBtn").textContent =
+    state.user
+      ? "Account"
+      : "Sign in";
 
+
+  $("dashboardGate").hidden =
+    !!state.user;
+
+
+  $("productForm").hidden =
+    !state.user;
+
+
+  if(state.user){
+
+    loadProfile();
+
+  }else{
+
+    $("myProducts").innerHTML =
+      "";
+
+  }
+
+}
+
+
+async function loadProfile(){
+
+  if(
+    !supabase ||
+    !state.user
+  ) return;
+
+
+  const {
+    data
+  } =
+    await supabase
+      .from("profiles")
+      .select(
+        "gcash_number"
+      )
+      .eq(
+        "id",
+        state.user.id
+      )
+      .maybeSingle();
+
+
+  $("gcashNumber").value =
+    data?.gcash_number ||
+    state.user.user_metadata?.gcash_number ||
+    "";
+
+
+  const {
+    data:products
+  } =
+    await supabase
+      .from("products")
+      .select(
+        "id,name,price,is_active"
+      )
+      .eq(
+        "seller_id",
+        state.user.id
+      )
+      .order(
+        "created_at",
+        {ascending:false}
+      );
+
+
+  $("myProducts").innerHTML =
+    products?.length
+
+      ? `
+        <h3>
+          Your listings
+        </h3>
+
+        ${
+          products.map(
+            p => `
+
+              <div class="seller-product">
+
+                <span>
+                  ${escapeHtml(p.name)}
+                  ·
+                  ${money(p.price)}
+                </span>
+
+                <span>
+                  ${
+                    p.is_active
+                      ? "Active"
+                      : "Hidden"
+                  }
+                </span>
+
+              </div>
+
+            `
+          ).join("")
         }
+      `
 
-
-        if (!result.checkout_url) {
-
-            throw new Error(
-                "PayMongo did not return a checkout URL."
-            );
-
-        }
-
-
-        localStorage.removeItem(
-            "jishin_scents_cart"
-        );
-
-        state.cart = [];
-
-        saveCart();
-
-        renderCart();
-
-        window.location.href =
-            result.checkout_url;
-
-    } catch (error) {
-
-        console.error(error);
-
-        showToast(
-            error.message ||
-            "Unable to start payment."
-        );
-
-    } finally {
-
-        button.disabled = false;
-        button.textContent =
-            originalText;
-
-    }
+      : "";
 
 }
 
 
-$("#checkoutButton").addEventListener(
-    "click",
-    startCheckout
-);
+async function publishProduct(e){
+
+  e.preventDefault();
 
 
-/* ============================================================
-   PAYMENT RETURN MESSAGE
-============================================================ */
+  if(
+    !supabase ||
+    !state.user
+  ) return;
 
-function handlePaymentReturn() {
 
-    const params =
-        new URLSearchParams(
-            window.location.search
-        );
+  const name =
+    $("productName")
+      .value
+      .trim();
 
-    const payment =
-        params.get("payment");
+  const price =
+    Number(
+      $("productPrice")
+        .value
+    );
 
-    if (payment === "success") {
+  const category =
+    $("productCategory")
+      .value;
 
-        showToast(
-            "Payment submitted. Your order will be marked paid after PayMongo confirms the webhook."
-        );
+  const image_url =
+    $("productImage")
+      .value
+      .trim();
 
-    }
+  const description =
+    $("productDescription")
+      .value
+      .trim();
 
-    if (payment === "cancelled") {
+  const gcash =
+    $("gcashNumber")
+      .value
+      .trim();
 
-        showToast(
-            "Payment was cancelled. Your cart was not charged."
-        );
 
-    }
+  const msg =
+    $("productFormMessage");
+
+
+  msg.textContent =
+    "Publishing...";
+
+
+  if(
+    gcash &&
+    !/^09\d{9}$/.test(gcash)
+  ){
+
+    msg.textContent =
+      "Enter a valid 11-digit GCash number.";
+
+    return;
+
+  }
+
+
+  const {
+    error:profileError
+  } =
+    await supabase
+      .from("profiles")
+      .update({
+        gcash_number:
+          gcash || null
+      })
+      .eq(
+        "id",
+        state.user.id
+      );
+
+
+  if(profileError){
+
+    msg.textContent =
+      "Could not save your seller profile.";
+
+    return;
+
+  }
+
+
+  const {
+    error
+  } =
+    await supabase
+      .from("products")
+      .insert({
+
+        seller_id:
+          state.user.id,
+
+        name,
+
+        description,
+
+        price,
+
+        category,
+
+        image_url:
+          image_url || null
+
+      });
+
+
+  msg.textContent =
+    error
+      ? "Could not publish product. Check the form and your permissions."
+      : "Product published.";
+
+
+  if(!error){
+
+    e.currentTarget.reset();
+
+    $("gcashNumber").value =
+      gcash;
+
+    await loadProducts();
+
+    await loadProfile();
+
+  }
 
 }
 
 
-/* ============================================================
-   KEYBOARD
-============================================================ */
+/* PAYMONGO CHECKOUT */
+
+async function checkout(){
+
+  const msg =
+    $("checkoutMessage");
+
+
+  if(!state.cart.length){
+
+    msg.textContent =
+      "Your cart is empty.";
+
+    return;
+
+  }
+
+
+  if(
+    !supabase ||
+    !state.user
+  ){
+
+    msg.textContent =
+      "Please sign in before checkout.";
+
+    showAuth();
+
+    return;
+
+  }
+
+
+  msg.textContent =
+    "Creating secure checkout...";
+
+
+  const {
+    data:{
+      session
+    }
+  } =
+    await supabase.auth
+      .getSession();
+
+
+  const response =
+    await fetch(
+      "/api/create-checkout",
+      {
+
+        method:"POST",
+
+        headers:{
+          "Content-Type":
+            "application/json",
+
+          "Authorization":
+            `Bearer ${
+              session?.access_token || ""
+            }`
+
+        },
+
+        body:JSON.stringify({
+
+          items:
+            state.cart.map(
+              i => ({
+                id:i.id,
+                quantity:i.quantity
+              })
+            )
+
+        })
+
+      }
+    );
+
+
+  const data =
+    await response
+      .json()
+      .catch(
+        () => ({})
+      );
+
+
+  if(!response.ok){
+
+    msg.textContent =
+      data.error ||
+      "Unable to create checkout.";
+
+    return;
+
+  }
+
+
+  window.location.href =
+    data.checkout_url;
+
+}
+
+
+/* CONTACT */
+
+async function submitContact(e){
+
+  e.preventDefault();
+
+
+  $("contactMessageStatus")
+    .textContent =
+      "Thank you. Your message has been prepared for support.";
+
+
+  e.currentTarget.reset();
+
+}
+
+
+/* CLICK HANDLERS */
 
 document.addEventListener(
-    "keydown",
-    event => {
+  "click",
+  async e => {
 
-        if (event.key !== "Escape") return;
+    const add =
+      e.target.closest(
+        "[data-add]"
+      );
 
-        document
-            .querySelectorAll(".modal.active")
-            .forEach(modal => {
-                closeModal(modal.id);
-            });
 
-        $("#cartDrawer")
-            .classList.remove("active");
+    if(add){
+
+      const p =
+        state.products.find(
+          x =>
+            x.id ===
+            add.dataset.add
+        );
+
+      if(p)
+        addToCart(p);
+
+      return;
 
     }
+
+
+    const view =
+      e.target.closest(
+        "[data-view]"
+      );
+
+
+    if(view){
+
+      await openProduct(
+        view.dataset.view
+      );
+
+      return;
+
+    }
+
+
+    const inc =
+      e.target.closest(
+        "[data-cart-inc]"
+      );
+
+
+    if(inc){
+
+      const i =
+        state.cart.find(
+          x =>
+            x.id ===
+            inc.dataset.cartInc
+        );
+
+
+      if(i)
+        i.quantity++;
+
+
+      saveCart();
+
+      return;
+
+    }
+
+
+    const dec =
+      e.target.closest(
+        "[data-cart-dec]"
+      );
+
+
+    if(dec){
+
+      const i =
+        state.cart.find(
+          x =>
+            x.id ===
+            dec.dataset.cartDec
+        );
+
+
+      if(i){
+
+        i.quantity--;
+
+        if(i.quantity <= 0){
+
+          state.cart =
+            state.cart.filter(
+              x =>
+                x.id !== i.id
+            );
+
+        }
+
+      }
+
+
+      saveCart();
+
+      return;
+
+    }
+
+
+    const rem =
+      e.target.closest(
+        "[data-cart-remove]"
+      );
+
+
+    if(rem){
+
+      state.cart =
+        state.cart.filter(
+          x =>
+            x.id !==
+            rem.dataset.cartRemove
+        );
+
+      saveCart();
+
+      return;
+
+    }
+
+
+    if(
+      e.target.matches(
+        "[data-close-modal]"
+      )
+    ){
+
+      closeModals();
+
+    }
+
+
+    const mode =
+      e.target.closest(
+        "[data-auth-mode]"
+      );
+
+
+    if(mode){
+
+      state.authMode =
+        mode.dataset.authMode;
+
+
+      document
+        .querySelectorAll(
+          "[data-auth-mode]"
+        )
+        .forEach(
+          x =>
+            x.classList.toggle(
+              "active",
+              x === mode
+            )
+        );
+
+
+      showAuth();
+
+    }
+
+  }
 );
 
 
-/* ============================================================
-   INITIALIZATION
-============================================================ */
+/* EVENTS */
 
-async function initializeApp() {
+$("searchInput")
+  .addEventListener(
+    "input",
+    renderProducts
+  );
 
-    if (
-        SUPABASE_URL.includes("YOUR_") ||
-        SUPABASE_ANON_KEY.includes("YOUR_")
-    ) {
 
-        showToast(
-            "Configure your Supabase URL and key in app.js."
+$("categoryFilter")
+  .addEventListener(
+    "change",
+    renderProducts
+  );
+
+
+$("cartBtn")
+  .addEventListener(
+    "click",
+    openCart
+  );
+
+
+$("footerCartBtn")
+  .addEventListener(
+    "click",
+    openCart
+  );
+
+
+$("cartClose")
+  .addEventListener(
+    "click",
+    closeCart
+  );
+
+
+$("checkoutBtn")
+  .addEventListener(
+    "click",
+    checkout
+  );
+
+
+$("authBtn")
+  .addEventListener(
+    "click",
+    showAuth
+  );
+
+
+$("dashboardSignIn")
+  .addEventListener(
+    "click",
+    showAuth
+  );
+
+
+$("footerAuthBtn")
+  .addEventListener(
+    "click",
+    showAuth
+  );
+
+
+$("authForm")
+  .addEventListener(
+    "submit",
+    handleAuth
+  );
+
+
+$("signOutBtn")
+  .addEventListener(
+    "click",
+    async () => {
+
+      await supabase.auth
+        .signOut();
+
+      closeModals();
+
+    }
+  );
+
+
+$("productForm")
+  .addEventListener(
+    "submit",
+    publishProduct
+  );
+
+
+$("contactForm")
+  .addEventListener(
+    "submit",
+    submitContact
+  );
+
+
+$("navToggle")
+  .addEventListener(
+    "click",
+    () => {
+
+      const open =
+        $("mainNav")
+          .classList
+          .toggle("open");
+
+
+      $("navToggle")
+        .setAttribute(
+          "aria-expanded",
+          String(open)
+        );
+
+
+      document
+        .querySelector(
+          ".nav-actions"
+        )
+        .classList
+        .toggle(
+          "mobile-visible",
+          open
         );
 
     }
+  );
 
-    updateCartBadge();
-    renderCart();
 
-    await loadCurrentUser();
-    await loadProducts();
+document
+  .querySelectorAll(
+    ".main-nav a"
+  )
+  .forEach(
+    a =>
+      a.addEventListener(
+        "click",
+        () => {
 
-    handlePaymentReturn();
+          $("mainNav")
+            .classList
+            .remove("open");
+
+          $("navToggle")
+            .setAttribute(
+              "aria-expanded",
+              "false"
+            );
+
+          $("navToggle")
+            .classList
+            .remove("open");
+
+        }
+      )
+  );
+
+
+$("year").textContent =
+  new Date().getFullYear();
+
+
+/* SUPABASE AUTH */
+
+if(supabase){
+
+  supabase.auth
+    .onAuthStateChange(
+      () =>
+        refreshUser()
+    );
 
 }
 
 
-initializeApp();
+/* INITIALIZATION */
+
+renderCart();
+
+loadProducts();
+
+refreshUser();
