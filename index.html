@@ -738,13 +738,13 @@
 window.SCENTORA_CONFIG = {
 
   SUPABASE_URL:
-    "https://qujmqckqgmidtrwjzhfw.supabase.co",
+    "YOUR_SUPABASE_URL",
 
   SUPABASE_ANON_KEY:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF1am1xY2txZ21pZHRyd2p6aGZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NjgwNDUsImV4cCI6MjEwMzM0NDA0NX0.3ZaIi3H2xbyuy42cZWFzzm-wmzcQUlcWbH8G4RX__j4",
+    "YOUR_SUPABASE_ANON_KEY",
 
   VOICEFLOW_PROJECT_ID:
-    "6a904bddf83c770cbc4e63c2"
+    "YOUR_VOICEFLOW_PROJECT_ID"
 
 };
 
@@ -756,20 +756,51 @@ window.SCENTORA_CONFIG = {
 
 <!-- VOICEFLOW -->
 
-<script type="text/javascript">
-  (function(d, t) {
-      var v = d.createElement(t), s = d.getElementsByTagName(t)[0];
-      v.onload = function() {
-        window.voiceflow.chat.load({
-          verify: { projectID: '6a904bddf83c770cbc4e63c2' },
-          url: 'https://general-runtime.voiceflow.com',
-          voice: {
-            url: "https://runtime-api.voiceflow.com"
-          }
-        });
+<script>
+
+(function(d,t){
+
+  if (
+    !window.SCENTORA_CONFIG ||
+    window.SCENTORA_CONFIG.VOICEFLOW_PROJECT_ID ===
+    "YOUR_VOICEFLOW_PROJECT_ID"
+  ) return;
+
+  var v=d.createElement(t);
+  var s=d.getElementsByTagName(t)[0];
+
+  v.onload=function(){
+
+    window.voiceflow.chat.load({
+
+      verify:{
+        projectID:
+          window.SCENTORA_CONFIG.VOICEFLOW_PROJECT_ID
+      },
+
+      url:
+        "https://general-runtime.voiceflow.com",
+
+      versionID:
+        "production",
+
+      voice:{
+        url:
+          "https://runtime-api.voiceflow.com"
       }
-      v.src = "https://cdn.voiceflow.com/widget-next/bundle.mjs"; v.type = "text/javascript"; s.parentNode.insertBefore(v, s);
-  })(document, 'script');
-</script>
-</body>
-</html>
+
+    });
+
+  };
+
+  v.src =
+    "https://cdn.voiceflow.com/widget-next/bundle.mjs";
+
+  v.type =
+    "text/javascript";
+
+  s.parentNode.insertBefore(v,s);
+
+})(document,"script");
+
+</
